@@ -2,7 +2,7 @@
 let currentUser = null;
 let currentPage = 'adminTransactions';
 let currentEditTransaction = null;
-let currentAdminUpdate = null;
+let currentUserAction = null;
 
 // Cache for better performance
 let dataCache = {
@@ -16,7 +16,7 @@ let dataCache = {
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbxRc412OwfdTLCG0j7vyMqi-G7_j4EiXERjUbjnPOk5-dM-KkFK_RgzSDnfWWa7EVbfAA/exec"; // Replace with your script ID
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbxpAUcMSjZupy-4Ii_tCqYbdcxQrcKJfRLBb_wyoZDIdKYWX85ptBkTjwnrarOXa60ymw/exec"; // Replace with your script ID
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -377,8 +377,7 @@ function logout() {
 async function showPage(page) {
     document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('border-blue-500', 'text-blue-600', 'border-green-500', 'text-green-600');
-        btn.classList.add('border-transparent');
+        btn.classList.remove('active-admin', 'active-user');
     });
 
     document.getElementById(page + 'Page').classList.remove('hidden');
@@ -390,9 +389,9 @@ async function showPage(page) {
 
     if (clickedBtn) {
         if (currentUser && currentUser.role === 'admin') {
-            clickedBtn.classList.add('border-blue-500', 'text-blue-600');
+            clickedBtn.classList.add('active-admin');
         } else {
-            clickedBtn.classList.add('border-green-500', 'text-green-600');
+            clickedBtn.classList.add('active-user');
         }
     }
 
@@ -420,7 +419,7 @@ async function loadAdminData() {
 
 async function loadAdminTransactions() {
     const container = document.getElementById('adminTransactionsList');
-    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i><p class="mt-2 text-gray-500">Loading transactions...</p></div>';
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-purple-500"></i><p class="mt-2 text-gray-500">Loading transactions...</p></div>';
 
     try {
         const transactions = await api.getSheet('transaction_master');
@@ -437,7 +436,6 @@ async function loadAdminTransactions() {
         });
 
         const html = sortedTransactions.map(transaction => {
-            const tid = transaction.transaction_id || transaction.id;
             const mode = transaction.mode || 'to get';
             const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
             const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
@@ -458,7 +456,7 @@ async function loadAdminTransactions() {
 
             return `
                 <div class="transaction-card">
-                    <div class="transaction-header" onclick="toggleTransactionDetails('${tid}')">
+                    <div class="transaction-header" onclick="toggleTransactionDetails('${transaction.transaction_id || transaction.id}')">
                         <div class="flex items-center min-w-0 flex-1">
                             <div class="transaction-icon">
                                 <i class="fas ${modeIcon}"></i>
@@ -470,37 +468,37 @@ async function loadAdminTransactions() {
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <span class="mode-badge ${modeClass}">${mode}</span>
-                            ${amount > 0 ? `<span class="transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
-                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${tid}"></i>
+                            <span class="font-bold text-purple-600">₹${amount}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${transaction.transaction_id || transaction.id}"></i>
                         </div>
                     </div>
                     
-                    <div class="details-container" id="details-${tid}">
+                    <div class="details-container" id="details-${transaction.transaction_id || transaction.id}">
                         <div class="detail-item">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <div class="detail-label">Transaction ID</div>
-                                    <div class="detail-value">${tid}</div>
+                                    <div class="detail-value">${transaction.transaction_id || transaction.id || 'N/A'}</div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Mode</div>
                                     <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
                                 </div>
                                 <div>
-                                    <div class="detail-label">Amount</div>
-                                    <div class="detail-value transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</div>
+                                    <div class="detail-label">Total Amount</div>
+                                    <div class="detail-value amount-display">₹${amount}</div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Date & Time</div>
                                     <div class="detail-value">${formattedDate}</div>
                                 </div>
-                                <div class="md:col-span-2">
+                                <div>
                                     <div class="detail-label">Bill</div>
                                     <div class="detail-value">${billLink}</div>
                                 </div>
                             </div>
                             <div class="mt-3 flex gap-2">
-                                <button onclick="event.stopPropagation(); openEditTransactionModal('${tid}')" class="edit-btn">
+                                <button onclick="event.stopPropagation(); openEditTransactionModal('${transaction.transaction_id || transaction.id}')" class="edit-btn">
                                     <i class="fas fa-edit mr-1"></i>Edit
                                 </button>
                             </div>
@@ -540,12 +538,9 @@ function toggleTransactionDetails(id) {
     }
 }
 
-// =============================
-// 👨‍💼 Admin Users Management
-// =============================
 async function loadAdminUsers() {
     const container = document.getElementById('adminUsersList');
-    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i><p class="mt-2 text-gray-500">Loading users...</p></div>';
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-purple-500"></i><p class="mt-2 text-gray-500">Loading users...</p></div>';
 
     try {
         const users = await api.getSheet('user_credentials');
@@ -555,6 +550,9 @@ async function loadAdminUsers() {
             return;
         }
 
+        // Filter out admin users from the list
+        const normalUsers = users.filter(u => u.role !== 'admin');
+
         const allTransactions = await api.getSheet('transaction_master');
         const transactionMap = {};
         if (allTransactions && Array.isArray(allTransactions)) {
@@ -563,7 +561,7 @@ async function loadAdminUsers() {
             });
         }
 
-        const userPromises = users.map(async (user) => {
+        const userPromises = normalUsers.map(async (user) => {
             const userTransactions = await api.getUserTransactions(user.username);
             return {
                 ...user,
@@ -582,31 +580,31 @@ async function loadAdminUsers() {
                 const transaction = transactionMap[t.transaction_id];
                 const title = transaction ? transaction.title : 'Unknown';
                 const status = t.status || 'pending';
-                const statusClass = status === 'completed' ? 'completed' : 
-                                   status === 'no' ? 'no' :
-                                   status === 'to get' ? 'get' : 
-                                   status === 'to give' ? 'give' : 'pending';
+                const statusClass = status === 'completed' ? 'completed' : 'pending';
                 const amount = t.amount || 0;
-                const amountClass = status === 'to get' ? 'get' : 
-                                   status === 'completed' ? 'completed' : 
-                                   status === 'no' ? 'no' : 'give';
+                const totalAmount = transaction ? transaction.amount || 0 : 0;
+                const remaining = totalAmount - amount;
 
                 return `
                     <div class="user-transaction-item">
                         <div class="flex justify-between items-center">
-                            <div class="flex-1">
+                            <div>
                                 <div class="font-medium">${title}</div>
                                 <div class="text-sm text-gray-500">${t.date || 'N/A'}</div>
                             </div>
-                            <div class="text-right flex items-center gap-2">
-                                <span class="transaction-status-badge ${statusClass}">${status}</span>
-                                ${amount > 0 ? `<span class="transaction-amount ${amountClass}">₹${amount}</span>` : ''}
-                                <button onclick="event.stopPropagation(); openAdminUpdateUserModal('${user.username}', '${t.transaction_id}', '${title}', '${status}', ${amount}, '${t.date || ''}')" 
-                                        class="admin-action-btn text-xs">
+                            <div class="text-right">
+                                <span class="status-badge ${statusClass}">${status}</span>
+                                <div class="text-sm">Paid: ₹${amount}</div>
+                                ${remaining > 0 ? `<div class="text-sm text-orange-500">Remaining: ₹${remaining}</div>` : ''}
+                            </div>
+                        </div>
+                        ${status === 'pending' ? `
+                            <div class="mt-2">
+                                <button onclick="event.stopPropagation(); openUserActionModal('${t.transaction_id}', '${user.username}')" class="edit-btn">
                                     <i class="fas fa-pen mr-1"></i>Update
                                 </button>
                             </div>
-                        </div>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
@@ -665,102 +663,6 @@ function toggleUserExpand(username) {
     content.classList.add('open');
     card.classList.add('expanded');
     if (icon) icon.classList.add('rotated');
-}
-
-// =============================
-// 👨‍💼 Admin Update User Transaction
-// =============================
-function openAdminUpdateUserModal(username, transactionId, title, currentStatus, currentAmount, currentDate) {
-    const modal = document.getElementById('adminUpdateUserModal');
-    const form = document.getElementById('adminUpdateUserForm');
-    form.reset();
-    document.getElementById('adminUpdateError').classList.add('hidden');
-    document.getElementById('adminUpdateSuccess').classList.add('hidden');
-
-    currentAdminUpdate = {
-        username: username,
-        transactionId: transactionId
-    };
-
-    document.getElementById('adminUpdateUsername').value = username;
-    document.getElementById('adminUpdateTransactionTitle').value = title;
-    document.getElementById('adminUpdateTransactionId').value = transactionId;
-    document.getElementById('adminUpdateStatus').value = currentStatus || '';
-    document.getElementById('adminUpdateAmount').value = currentAmount || '';
-
-    if (currentDate) {
-        const date = new Date(currentDate);
-        const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        document.getElementById('adminUpdateDate').value = localDateTime.toISOString().slice(0, 16);
-    } else {
-        const now = new Date();
-        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        document.getElementById('adminUpdateDate').value = localDateTime.toISOString().slice(0, 16);
-    }
-
-    modal.classList.remove('hidden');
-}
-
-function closeAdminUpdateUserModal() {
-    document.getElementById('adminUpdateUserModal').classList.add('hidden');
-    currentAdminUpdate = null;
-}
-
-async function submitAdminUpdateUser(event) {
-    event.preventDefault();
-
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-
-    try {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
-        submitBtn.disabled = true;
-
-        const username = document.getElementById('adminUpdateUsername').value;
-        const transactionId = document.getElementById('adminUpdateTransactionId').value;
-        const status = document.getElementById('adminUpdateStatus').value;
-        const amount = parseInt(document.getElementById('adminUpdateAmount').value);
-        const date = document.getElementById('adminUpdateDate').value;
-
-        if (!status || isNaN(amount) || amount < 0 || !date) {
-            showAdminUpdateError('Please fill in all required fields with valid values');
-            return;
-        }
-
-        const result = await api.updateUserTransaction(username, transactionId, status, amount, date);
-
-        if (result && result.success) {
-            showAdminUpdateSuccess('Transaction status updated successfully!');
-            setTimeout(() => {
-                closeAdminUpdateUserModal();
-                loadAdminUsers();
-                loadAdminTransactions();
-            }, 1500);
-        } else {
-            throw new Error(result?.error || 'Failed to update transaction');
-        }
-
-    } catch (error) {
-        console.error('Error updating user transaction:', error);
-        showAdminUpdateError('Error: ' + error.message);
-    } finally {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }
-}
-
-function showAdminUpdateError(message) {
-    const errorDiv = document.getElementById('adminUpdateError');
-    errorDiv.textContent = message;
-    errorDiv.classList.remove('hidden');
-    document.getElementById('adminUpdateSuccess').classList.add('hidden');
-}
-
-function showAdminUpdateSuccess(message) {
-    const successDiv = document.getElementById('adminUpdateSuccess');
-    successDiv.textContent = message;
-    successDiv.classList.remove('hidden');
-    document.getElementById('adminUpdateError').classList.add('hidden');
 }
 
 // =============================
@@ -830,7 +732,7 @@ async function submitAddTransaction(event) {
         const date = document.getElementById('transactionDate').value;
         const fileInput = document.getElementById('billUpload');
 
-        if (!title || !mode || isNaN(amount) || amount < 0 || !date) {
+        if (!title || !mode || !date || isNaN(amount) || amount < 0) {
             showAddTransactionError('Please fill in all required fields with valid values');
             return;
         }
@@ -899,7 +801,7 @@ function showAddTransactionSuccess(message) {
 }
 
 // =============================
-// ✏️ Edit Transaction Functions (Admin Only)
+// ✏️ Edit Transaction Functions (Admin)
 // =============================
 async function openEditTransactionModal(transactionId) {
     const modal = document.getElementById('editTransactionModal');
@@ -935,7 +837,7 @@ async function openEditTransactionModal(transactionId) {
         if (transaction.bill_url) {
             currentBillDiv.innerHTML = `
                 <p class="text-sm text-gray-600">
-                    <i class="fas fa-file-image mr-1 text-blue-500"></i>
+                    <i class="fas fa-file-image mr-1 text-purple-500"></i>
                     Current bill: <a href="${transaction.bill_url}" target="_blank" class="bill-link">View Bill</a>
                 </p>
             `;
@@ -972,7 +874,7 @@ async function submitEditTransaction(event) {
         const date = document.getElementById('editTransactionDate').value;
         const fileInput = document.getElementById('editBillUpload');
 
-        if (!title || !mode || isNaN(amount) || amount < 0 || !date) {
+        if (!title || !mode || !date || isNaN(amount) || amount < 0) {
             showEditTransactionError('Please fill in all required fields with valid values');
             return;
         }
@@ -1032,11 +934,11 @@ function showEditTransactionSuccess(message) {
 }
 
 // =============================
-// 👤 User Functions (View Only)
+// 👤 User Functions
 // =============================
 async function loadUserTransactions() {
     const container = document.getElementById('userTransactionsList');
-    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-green-500"></i><p class="mt-2 text-gray-500">Loading transactions...</p></div>';
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-teal-500"></i><p class="mt-2 text-gray-500">Loading transactions...</p></div>';
 
     try {
         const transactions = await api.getSheet('transaction_master');
@@ -1064,16 +966,16 @@ async function loadUserTransactions() {
             const tid = transaction.transaction_id || transaction.id;
             const userTxn = userTransactionMap[tid];
             const status = userTxn?.status || 'pending';
-            const amount = userTxn?.amount || transaction.amount || 0;
+            const paidAmount = userTxn?.amount || 0;
+            const totalAmount = transaction.amount || 0;
+            const remaining = totalAmount - paidAmount;
             
             const mode = transaction.mode || 'to get';
             const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
             const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
             
-            const statusClass = status === 'completed' ? 'completed' : 
-                               status === 'no' ? 'no' :
-                               status === 'to get' ? 'get' : 
-                               status === 'to give' ? 'give' : 'pending';
+            const statusClass = status === 'completed' ? 'completed' : 'pending';
+            const statusLabel = status === 'completed' ? 'Completed' : 'Pending';
             
             const dateStr = transaction.date || transaction.transaction_date || 'N/A';
             const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
@@ -1088,15 +990,6 @@ async function loadUserTransactions() {
                 `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
                 '<span class="text-gray-400 text-sm">No bill uploaded</span>';
 
-            const userUpdateDate = userTxn?.date || 'N/A';
-            const formattedUserDate = userUpdateDate !== 'N/A' ? new Date(userUpdateDate).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }) : 'N/A';
-
             return `
                 <div class="transaction-card" onclick="toggleUserTransactionDetails('${tid}')">
                     <div class="transaction-header">
@@ -1110,8 +1003,8 @@ async function loadUserTransactions() {
                             </div>
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
-                            <span class="transaction-status-badge ${statusClass}">${status}</span>
-                            ${amount > 0 ? `<span class="transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : status === 'no' ? 'no' : 'give'}">₹${amount}</span>` : ''}
+                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            <span class="font-bold ${paidAmount > 0 ? 'text-teal-600' : 'text-gray-400'}">₹${paidAmount}</span>
                             <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
                         </div>
                     </div>
@@ -1128,28 +1021,37 @@ async function loadUserTransactions() {
                                     <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
                                 </div>
                                 <div>
-                                    <div class="detail-label">Amount</div>
-                                    <div class="detail-value transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : status === 'no' ? 'no' : 'give'}">₹${amount}</div>
+                                    <div class="detail-label">Total Amount</div>
+                                    <div class="detail-value amount-display">₹${totalAmount}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Paid Amount</div>
+                                    <div class="detail-value amount-display" style="color: ${paidAmount > 0 ? '#00C9A7' : '#636E72'}">₹${paidAmount}</div>
+                                </div>
+                                ${remaining > 0 ? `
+                                    <div>
+                                        <div class="detail-label">Remaining</div>
+                                        <div class="detail-value amount-display" style="color: #FF6B6B">₹${remaining}</div>
+                                    </div>
+                                ` : ''}
+                                <div>
+                                    <div class="detail-label">Status</div>
+                                    <div class="detail-value"><span class="status-badge ${statusClass}">${statusLabel}</span></div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Date & Time</div>
                                     <div class="detail-value">${formattedDate}</div>
                                 </div>
-                                <div class="md:col-span-2">
+                                <div>
                                     <div class="detail-label">Bill</div>
                                     <div class="detail-value">${billLink}</div>
                                 </div>
-                                <div>
-                                    <div class="detail-label">Status</div>
-                                    <div class="detail-value"><span class="transaction-status-badge ${statusClass}">${status}</span></div>
-                                </div>
-                                ${status !== 'pending' ? `
-                                    <div>
-                                        <div class="detail-label">Last Updated</div>
-                                        <div class="detail-value">${formattedUserDate}</div>
-                                    </div>
-                                ` : ''}
                             </div>
+                            ${status === 'pending' ? `
+                                <div class="mt-3 text-sm text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i> This transaction is pending. Please contact admin for updates.
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -1184,6 +1086,137 @@ function toggleUserTransactionDetails(id) {
             arrow.classList.remove('expanded');
         }
     }
+}
+
+// =============================
+// 👤 User Action Modal Functions (Admin updating user)
+// =============================
+async function openUserActionModal(transactionId, username) {
+    const modal = document.getElementById('userActionModal');
+    const form = document.getElementById('userActionForm');
+    form.reset();
+    document.getElementById('userActionError').classList.add('hidden');
+    document.getElementById('userActionSuccess').classList.add('hidden');
+
+    try {
+        const transactions = await api.getSheet('transaction_master');
+        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+
+        if (!transaction) {
+            alert('Transaction not found!');
+            return;
+        }
+
+        currentUserAction = transactionId;
+
+        document.getElementById('userActionTransactionId').value = transactionId;
+        document.getElementById('userActionUsername').value = username;
+        document.getElementById('userActionTitle').value = transaction.title || 'Untitled';
+
+        // Get existing user transaction data
+        const userTransactions = await api.getUserTransactions(username);
+        const userTxn = userTransactions ? userTransactions.find(t => t.transaction_id === transactionId) : null;
+
+        if (userTxn) {
+            document.getElementById('userActionStatus').value = userTxn.status || 'pending';
+            document.getElementById('userActionAmount').value = userTxn.amount || 0;
+            if (userTxn.date) {
+                const date = new Date(userTxn.date);
+                const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                document.getElementById('userActionDate').value = localDateTime.toISOString().slice(0, 16);
+            } else {
+                const now = new Date();
+                const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                document.getElementById('userActionDate').value = localDateTime.toISOString().slice(0, 16);
+            }
+        } else {
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            document.getElementById('userActionDate').value = localDateTime.toISOString().slice(0, 16);
+        }
+
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error opening user action modal:', error);
+        alert('Error loading transaction details. Please try again.');
+    }
+}
+
+function closeUserActionModal() {
+    document.getElementById('userActionModal').classList.add('hidden');
+    currentUserAction = null;
+}
+
+async function submitUserAction(event) {
+    event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+        submitBtn.disabled = true;
+
+        const transactionId = document.getElementById('userActionTransactionId').value;
+        const username = document.getElementById('userActionUsername').value;
+        const status = document.getElementById('userActionStatus').value;
+        const amount = parseInt(document.getElementById('userActionAmount').value);
+        const date = document.getElementById('userActionDate').value;
+
+        if (!status || isNaN(amount) || amount < 0) {
+            showUserActionError('Please fill in all required fields with valid values');
+            return;
+        }
+
+        // Get the transaction to check total amount
+        const transactions = await api.getSheet('transaction_master');
+        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+        const totalAmount = transaction ? parseInt(transaction.amount) || 0 : 0;
+
+        if (amount > totalAmount) {
+            showUserActionError(`Amount cannot exceed total amount (₹${totalAmount})`);
+            return;
+        }
+
+        const result = await api.updateUserTransaction(
+            username,
+            transactionId,
+            status,
+            amount,
+            date
+        );
+
+        if (result && result.success) {
+            showUserActionSuccess('User transaction updated successfully!');
+            setTimeout(() => {
+                closeUserActionModal();
+                loadAdminUsers();
+            }, 1500);
+        } else {
+            throw new Error(result?.error || 'Failed to update user transaction');
+        }
+
+    } catch (error) {
+        console.error('Error updating user transaction:', error);
+        showUserActionError('Error: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showUserActionError(message) {
+    const errorDiv = document.getElementById('userActionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('userActionSuccess').classList.add('hidden');
+}
+
+function showUserActionSuccess(message) {
+    const successDiv = document.getElementById('userActionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('userActionError').classList.add('hidden');
 }
 
 // =============================
@@ -1306,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('addTransactionForm').addEventListener('submit', submitAddTransaction);
     document.getElementById('editTransactionForm').addEventListener('submit', submitEditTransaction);
-    document.getElementById('adminUpdateUserForm').addEventListener('submit', submitAdminUpdateUser);
+    document.getElementById('userActionForm').addEventListener('submit', submitUserAction);
     document.getElementById('changePasswordForm').addEventListener('submit', changePassword);
 
     // Close modals on overlay click
@@ -1316,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.add('hidden');
                 if (this.id === 'addTransactionModal') closeAddTransactionModal();
                 if (this.id === 'editTransactionModal') closeEditTransactionModal();
-                if (this.id === 'adminUpdateUserModal') closeAdminUpdateUserModal();
+                if (this.id === 'userActionModal') closeUserActionModal();
                 if (this.id === 'changePasswordModal') closeChangePasswordModal();
             }
         });
@@ -1350,4 +1383,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })();
 
-console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #059669; font-size: 16px; font-weight: bold;');
+console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #6C63FF; font-size: 16px; font-weight: bold;');
