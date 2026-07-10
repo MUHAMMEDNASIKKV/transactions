@@ -16,7 +16,7 @@ let dataCache = {
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // Replace with your script ID
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbx9G9iFcncDtztwNpfb_lVMyABS6TNKkXU6afN4JjKIqHMHqRaVeFxwSfaaaaHLAZWS_Q/exec"; // Replace with your script ID
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
