@@ -824,6 +824,23 @@
             border-color: #8b5cf6;
             box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
         }
+
+        .amount-display {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .amount-display.get {
+            color: #166534;
+        }
+        .amount-display.give {
+            color: #dc2626;
+        }
+        .amount-display.completed {
+            color: #1e40af;
+        }
+        .amount-display.no {
+            color: #92400e;
+        }
     </style>
 </head>
 <body>
@@ -1042,6 +1059,13 @@
                         </div>
 
                         <div>
+                            <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount (Rs) *</label>
+                            <input type="number" id="transactionAmount" name="transactionAmount" required min="0" step="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300"
+                            placeholder="Enter amount">
+                        </div>
+
+                        <div>
                             <label for="billUpload" class="block text-sm font-medium text-gray-700 mb-2">Upload Bill Image</label>
                             <input type="file" id="billUpload" name="billUpload" accept="image/*"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300">
@@ -1103,6 +1127,12 @@
                                 <option value="to get">To Get</option>
                                 <option value="to give">To Give</option>
                             </select>
+                        </div>
+
+                        <div>
+                            <label for="editTransactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount (Rs) *</label>
+                            <input type="number" id="editTransactionAmount" name="editTransactionAmount" required min="0" step="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
                         </div>
 
                         <div>
