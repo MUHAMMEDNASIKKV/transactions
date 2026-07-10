@@ -2,7 +2,7 @@
 let currentUser = null;
 let currentPage = 'adminTransactions';
 let currentEditTransaction = null;
-let currentUserAction = null;
+let currentAdminUpdate = null;
 
 // Cache for better performance
 let dataCache = {
@@ -16,7 +16,7 @@ let dataCache = {
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbz5mxKVkjs2pObVCOC-ozG3A87BAC8c4ahhtwsTxOi2xOcmH8xB-ol5aKM9wxdu1QYSzg/exec"; // Replace with your script ID
+        this.apiUrl = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // Replace with your script ID
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -436,6 +436,7 @@ async function loadAdminTransactions() {
         });
 
         const html = sortedTransactions.map(transaction => {
+            const tid = transaction.transaction_id || transaction.id;
             const mode = transaction.mode || 'to get';
             const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
             const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
@@ -455,7 +456,7 @@ async function loadAdminTransactions() {
 
             return `
                 <div class="transaction-card">
-                    <div class="transaction-header" onclick="toggleTransactionDetails('${transaction.transaction_id || transaction.id}')">
+                    <div class="transaction-header" onclick="toggleTransactionDetails('${tid}')">
                         <div class="flex items-center min-w-0 flex-1">
                             <div class="transaction-icon">
                                 <i class="fas ${modeIcon}"></i>
@@ -467,16 +468,16 @@ async function loadAdminTransactions() {
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <span class="mode-badge ${modeClass}">${mode}</span>
-                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${transaction.transaction_id || transaction.id}"></i>
+                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${tid}"></i>
                         </div>
                     </div>
                     
-                    <div class="details-container" id="details-${transaction.transaction_id || transaction.id}">
+                    <div class="details-container" id="details-${tid}">
                         <div class="detail-item">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <div class="detail-label">Transaction ID</div>
-                                    <div class="detail-value">${transaction.transaction_id || transaction.id || 'N/A'}</div>
+                                    <div class="detail-value">${tid}</div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Mode</div>
@@ -492,7 +493,7 @@ async function loadAdminTransactions() {
                                 </div>
                             </div>
                             <div class="mt-3 flex gap-2">
-                                <button onclick="event.stopPropagation(); openEditTransactionModal('${transaction.transaction_id || transaction.id}')" class="edit-btn">
+                                <button onclick="event.stopPropagation(); openEditTransactionModal('${tid}')" class="edit-btn">
                                     <i class="fas fa-edit mr-1"></i>Edit
                                 </button>
                             </div>
@@ -532,6 +533,9 @@ function toggleTransactionDetails(id) {
     }
 }
 
+// =============================
+// 👨‍💼 Admin Users Management
+// =============================
 async function loadAdminUsers() {
     const container = document.getElementById('adminUsersList');
     container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i><p class="mt-2 text-gray-500">Loading users...</p></div>';
@@ -573,21 +577,27 @@ async function loadAdminUsers() {
                 const status = t.status || 'pending';
                 const statusClass = status === 'completed' ? 'completed' : 
                                    status === 'no' ? 'no' :
-                                   status === 'to get' ? 'get' : 'give';
+                                   status === 'to get' ? 'get' : 
+                                   status === 'to give' ? 'give' : 'pending';
                 const amount = t.amount || 0;
                 const amountClass = status === 'to get' ? 'get' : 
-                                   status === 'completed' ? 'get' : 'give';
+                                   status === 'completed' ? 'completed' : 
+                                   status === 'no' ? 'no' : 'give';
 
                 return `
                     <div class="user-transaction-item">
                         <div class="flex justify-between items-center">
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-medium">${title}</div>
                                 <div class="text-sm text-gray-500">${t.date || 'N/A'}</div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right flex items-center gap-2">
                                 <span class="transaction-status-badge ${statusClass}">${status}</span>
-                                ${amount > 0 ? `<div class="transaction-amount ${amountClass}">₹${amount}</div>` : ''}
+                                ${amount > 0 ? `<span class="transaction-amount ${amountClass}">₹${amount}</span>` : ''}
+                                <button onclick="event.stopPropagation(); openAdminUpdateUserModal('${user.username}', '${t.transaction_id}', '${title}', '${status}', ${amount}, '${t.date || ''}')" 
+                                        class="admin-action-btn text-xs">
+                                    <i class="fas fa-pen mr-1"></i>Update
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -648,6 +658,102 @@ function toggleUserExpand(username) {
     content.classList.add('open');
     card.classList.add('expanded');
     if (icon) icon.classList.add('rotated');
+}
+
+// =============================
+// 👨‍💼 Admin Update User Transaction
+// =============================
+function openAdminUpdateUserModal(username, transactionId, title, currentStatus, currentAmount, currentDate) {
+    const modal = document.getElementById('adminUpdateUserModal');
+    const form = document.getElementById('adminUpdateUserForm');
+    form.reset();
+    document.getElementById('adminUpdateError').classList.add('hidden');
+    document.getElementById('adminUpdateSuccess').classList.add('hidden');
+
+    currentAdminUpdate = {
+        username: username,
+        transactionId: transactionId
+    };
+
+    document.getElementById('adminUpdateUsername').value = username;
+    document.getElementById('adminUpdateTransactionTitle').value = title;
+    document.getElementById('adminUpdateTransactionId').value = transactionId;
+    document.getElementById('adminUpdateStatus').value = currentStatus || '';
+    document.getElementById('adminUpdateAmount').value = currentAmount || '';
+
+    if (currentDate) {
+        const date = new Date(currentDate);
+        const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        document.getElementById('adminUpdateDate').value = localDateTime.toISOString().slice(0, 16);
+    } else {
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        document.getElementById('adminUpdateDate').value = localDateTime.toISOString().slice(0, 16);
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeAdminUpdateUserModal() {
+    document.getElementById('adminUpdateUserModal').classList.add('hidden');
+    currentAdminUpdate = null;
+}
+
+async function submitAdminUpdateUser(event) {
+    event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+        submitBtn.disabled = true;
+
+        const username = document.getElementById('adminUpdateUsername').value;
+        const transactionId = document.getElementById('adminUpdateTransactionId').value;
+        const status = document.getElementById('adminUpdateStatus').value;
+        const amount = parseInt(document.getElementById('adminUpdateAmount').value);
+        const date = document.getElementById('adminUpdateDate').value;
+
+        if (!status || isNaN(amount) || amount < 0 || !date) {
+            showAdminUpdateError('Please fill in all required fields with valid values');
+            return;
+        }
+
+        const result = await api.updateUserTransaction(username, transactionId, status, amount, date);
+
+        if (result && result.success) {
+            showAdminUpdateSuccess('Transaction status updated successfully!');
+            setTimeout(() => {
+                closeAdminUpdateUserModal();
+                loadAdminUsers();
+                loadAdminTransactions();
+            }, 1500);
+        } else {
+            throw new Error(result?.error || 'Failed to update transaction');
+        }
+
+    } catch (error) {
+        console.error('Error updating user transaction:', error);
+        showAdminUpdateError('Error: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showAdminUpdateError(message) {
+    const errorDiv = document.getElementById('adminUpdateError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('adminUpdateSuccess').classList.add('hidden');
+}
+
+function showAdminUpdateSuccess(message) {
+    const successDiv = document.getElementById('adminUpdateSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('adminUpdateError').classList.add('hidden');
 }
 
 // =============================
@@ -784,7 +890,7 @@ function showAddTransactionSuccess(message) {
 }
 
 // =============================
-// ✏️ Edit Transaction Functions
+// ✏️ Edit Transaction Functions (Admin Only)
 // =============================
 async function openEditTransactionModal(transactionId) {
     const modal = document.getElementById('editTransactionModal');
@@ -915,7 +1021,7 @@ function showEditTransactionSuccess(message) {
 }
 
 // =============================
-// 👤 User Functions
+// 👤 User Functions (View Only)
 // =============================
 async function loadUserTransactions() {
     const container = document.getElementById('userTransactionsList');
@@ -955,7 +1061,8 @@ async function loadUserTransactions() {
             
             const statusClass = status === 'completed' ? 'completed' : 
                                status === 'no' ? 'no' :
-                               status === 'to get' ? 'get' : 'give';
+                               status === 'to get' ? 'get' : 
+                               status === 'to give' ? 'give' : 'pending';
             
             const dateStr = transaction.date || transaction.transaction_date || 'N/A';
             const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
@@ -970,7 +1077,15 @@ async function loadUserTransactions() {
                 `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
                 '<span class="text-gray-400 text-sm">No bill uploaded</span>';
 
-            const isPending = status === 'pending' || !userTxn;
+            // User update date if available
+            const userUpdateDate = userTxn?.date || 'N/A';
+            const formattedUserDate = userUpdateDate !== 'N/A' ? new Date(userUpdateDate).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'N/A';
 
             return `
                 <div class="transaction-card" onclick="toggleUserTransactionDetails('${tid}')">
@@ -985,8 +1100,8 @@ async function loadUserTransactions() {
                             </div>
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
-                            ${status !== 'pending' ? `<span class="transaction-status-badge ${statusClass}">${status}</span>` : ''}
-                            ${amount > 0 ? `<span class="transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : 'give'}">₹${amount}</span>` : ''}
+                            <span class="transaction-status-badge ${statusClass}">${status}</span>
+                            ${amount > 0 ? `<span class="transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : status === 'no' ? 'no' : 'give'}">₹${amount}</span>` : ''}
                             <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
                         </div>
                     </div>
@@ -1010,28 +1125,21 @@ async function loadUserTransactions() {
                                     <div class="detail-label">Bill</div>
                                     <div class="detail-value">${billLink}</div>
                                 </div>
+                                <div>
+                                    <div class="detail-label">Status</div>
+                                    <div class="detail-value"><span class="transaction-status-badge ${statusClass}">${status}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Amount</div>
+                                    <div class="detail-value transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : status === 'no' ? 'no' : 'give'}">₹${amount}</div>
+                                </div>
                                 ${status !== 'pending' ? `
                                     <div>
-                                        <div class="detail-label">Status</div>
-                                        <div class="detail-value"><span class="transaction-status-badge ${statusClass}">${status}</span></div>
-                                    </div>
-                                    <div>
-                                        <div class="detail-label">Amount</div>
-                                        <div class="detail-value transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : 'give'}">₹${amount}</div>
-                                    </div>
-                                    <div>
-                                        <div class="detail-label">Update Date</div>
-                                        <div class="detail-value">${userTxn?.date || 'N/A'}</div>
+                                        <div class="detail-label">Last Updated</div>
+                                        <div class="detail-value">${formattedUserDate}</div>
                                     </div>
                                 ` : ''}
                             </div>
-                            ${isPending ? `
-                                <div class="mt-3">
-                                    <button onclick="event.stopPropagation(); openUserActionModal('${tid}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300 text-sm">
-                                        <i class="fas fa-pen mr-1"></i>Update Status
-                                    </button>
-                                </div>
-                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -1066,107 +1174,6 @@ function toggleUserTransactionDetails(id) {
             arrow.classList.remove('expanded');
         }
     }
-}
-
-// =============================
-// 👤 User Action Modal Functions
-// =============================
-async function openUserActionModal(transactionId) {
-    const modal = document.getElementById('userActionModal');
-    const form = document.getElementById('userActionForm');
-    form.reset();
-    document.getElementById('userActionError').classList.add('hidden');
-    document.getElementById('userActionSuccess').classList.add('hidden');
-
-    try {
-        const transactions = await api.getSheet('transaction_master');
-        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
-
-        if (!transaction) {
-            alert('Transaction not found!');
-            return;
-        }
-
-        currentUserAction = transactionId;
-
-        document.getElementById('userActionTransactionId').value = transactionId;
-        document.getElementById('userActionTitle').value = transaction.title || 'Untitled';
-
-        const now = new Date();
-        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        document.getElementById('userActionDate').value = localDateTime.toISOString().slice(0, 16);
-
-        modal.classList.remove('hidden');
-    } catch (error) {
-        console.error('Error opening user action modal:', error);
-        alert('Error loading transaction details. Please try again.');
-    }
-}
-
-function closeUserActionModal() {
-    document.getElementById('userActionModal').classList.add('hidden');
-    currentUserAction = null;
-}
-
-async function submitUserAction(event) {
-    event.preventDefault();
-
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-
-    try {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
-        submitBtn.disabled = true;
-
-        const transactionId = document.getElementById('userActionTransactionId').value;
-        const status = document.getElementById('userActionStatus').value;
-        const amount = parseInt(document.getElementById('userActionAmount').value);
-        const date = document.getElementById('userActionDate').value;
-
-        if (!status || isNaN(amount) || amount < 0) {
-            showUserActionError('Please fill in all required fields with valid values');
-            return;
-        }
-
-        const result = await api.updateUserTransaction(
-            currentUser.username,
-            transactionId,
-            status,
-            amount,
-            date
-        );
-
-        if (result && result.success) {
-            showUserActionSuccess('Transaction updated successfully!');
-            setTimeout(() => {
-                closeUserActionModal();
-                loadUserTransactions();
-            }, 1500);
-        } else {
-            throw new Error(result?.error || 'Failed to update transaction');
-        }
-
-    } catch (error) {
-        console.error('Error updating user transaction:', error);
-        showUserActionError('Error: ' + error.message);
-    } finally {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }
-}
-
-function showUserActionError(message) {
-    const errorDiv = document.getElementById('userActionError');
-    errorDiv.textContent = message;
-    errorDiv.classList.remove('hidden');
-    document.getElementById('userActionSuccess').classList.add('hidden');
-}
-
-function showUserActionSuccess(message) {
-    const successDiv = document.getElementById('userActionSuccess');
-    successDiv.textContent = message;
-    successDiv.classList.remove('hidden');
-    document.getElementById('userActionError').classList.add('hidden');
 }
 
 // =============================
@@ -1289,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('addTransactionForm').addEventListener('submit', submitAddTransaction);
     document.getElementById('editTransactionForm').addEventListener('submit', submitEditTransaction);
-    document.getElementById('userActionForm').addEventListener('submit', submitUserAction);
+    document.getElementById('adminUpdateUserForm').addEventListener('submit', submitAdminUpdateUser);
     document.getElementById('changePasswordForm').addEventListener('submit', changePassword);
 
     // Close modals on overlay click
@@ -1299,7 +1306,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.add('hidden');
                 if (this.id === 'addTransactionModal') closeAddTransactionModal();
                 if (this.id === 'editTransactionModal') closeEditTransactionModal();
-                if (this.id === 'userActionModal') closeUserActionModal();
+                if (this.id === 'adminUpdateUserModal') closeAdminUpdateUserModal();
                 if (this.id === 'changePasswordModal') closeChangePasswordModal();
             }
         });
