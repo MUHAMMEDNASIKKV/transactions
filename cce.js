@@ -3,7 +3,7 @@
 // ================================================================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbxU3ag0HT1ylsikdyO758qov6CLggFO-z4ZwH4P4pj3hU01dZ_RO5GHRbyhi58-FrCi/exec"; // <-- REPLACE with your deployed URL
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbzpeKEtwqIaq1Bk5dspezdoozszk0b1s9hA5Bs66RxoRqXi84409GgE2bTCahX7KtRvEQ/exec"; // <-- REPLACE with your deployed URL
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
