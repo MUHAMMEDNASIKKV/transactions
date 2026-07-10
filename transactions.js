@@ -16,7 +16,7 @@ let dataCache = {
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbx9G9iFcncDtztwNpfb_lVMyABS6TNKkXU6afN4JjKIqHMHqRaVeFxwSfaaaaHLAZWS_Q/exec"; // Replace with your script ID
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbxRc412OwfdTLCG0j7vyMqi-G7_j4EiXERjUbjnPOk5-dM-KkFK_RgzSDnfWWa7EVbfAA/exec"; // Replace with your script ID
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -192,13 +192,14 @@ class GoogleSheetsAPI {
         });
     }
 
-    async updateTransaction(transactionId, title, mode, billUrl, date) {
+    async updateTransaction(transactionId, title, mode, amount, billUrl, date) {
         try {
             const payload = {
                 action: 'updateTransaction',
                 transactionId: transactionId,
                 title: title,
                 mode: mode,
+                amount: amount,
                 billUrl: billUrl,
                 date: date
             };
@@ -440,6 +441,7 @@ async function loadAdminTransactions() {
             const mode = transaction.mode || 'to get';
             const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
             const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            const amount = transaction.amount || 0;
             
             const dateStr = transaction.date || transaction.transaction_date || 'N/A';
             const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
@@ -468,6 +470,7 @@ async function loadAdminTransactions() {
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <span class="mode-badge ${modeClass}">${mode}</span>
+                            ${amount > 0 ? `<span class="transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
                             <i class="fas fa-chevron-down expand-arrow" id="arrow-${tid}"></i>
                         </div>
                     </div>
@@ -484,10 +487,14 @@ async function loadAdminTransactions() {
                                     <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
                                 </div>
                                 <div>
+                                    <div class="detail-label">Amount</div>
+                                    <div class="detail-value transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</div>
+                                </div>
+                                <div>
                                     <div class="detail-label">Date & Time</div>
                                     <div class="detail-value">${formattedDate}</div>
                                 </div>
-                                <div>
+                                <div class="md:col-span-2">
                                     <div class="detail-label">Bill</div>
                                     <div class="detail-value">${billLink}</div>
                                 </div>
@@ -819,11 +826,12 @@ async function submitAddTransaction(event) {
         const transactionId = document.getElementById('autoTransactionId').value;
         const title = document.getElementById('transactionTitle').value.trim();
         const mode = document.getElementById('transactionMode').value;
+        const amount = parseInt(document.getElementById('transactionAmount').value);
         const date = document.getElementById('transactionDate').value;
         const fileInput = document.getElementById('billUpload');
 
-        if (!title || !mode || !date) {
-            showAddTransactionError('Please fill in all required fields');
+        if (!title || !mode || isNaN(amount) || amount < 0 || !date) {
+            showAddTransactionError('Please fill in all required fields with valid values');
             return;
         }
 
@@ -850,6 +858,7 @@ async function submitAddTransaction(event) {
             transactionId,
             title,
             mode,
+            amount,
             billUrl,
             date
         ];
@@ -913,6 +922,7 @@ async function openEditTransactionModal(transactionId) {
         document.getElementById('editTransactionId').value = transaction.transaction_id || transaction.id;
         document.getElementById('editTransactionTitle').value = transaction.title || '';
         document.getElementById('editTransactionMode').value = transaction.mode || 'to get';
+        document.getElementById('editTransactionAmount').value = transaction.amount || 0;
 
         const dateStr = transaction.date || transaction.transaction_date || '';
         if (dateStr) {
@@ -958,11 +968,12 @@ async function submitEditTransaction(event) {
         const transactionId = document.getElementById('editTransactionId').value;
         const title = document.getElementById('editTransactionTitle').value.trim();
         const mode = document.getElementById('editTransactionMode').value;
+        const amount = parseInt(document.getElementById('editTransactionAmount').value);
         const date = document.getElementById('editTransactionDate').value;
         const fileInput = document.getElementById('editBillUpload');
 
-        if (!title || !mode || !date) {
-            showEditTransactionError('Please fill in all required fields');
+        if (!title || !mode || isNaN(amount) || amount < 0 || !date) {
+            showEditTransactionError('Please fill in all required fields with valid values');
             return;
         }
 
@@ -985,7 +996,7 @@ async function submitEditTransaction(event) {
             }
         }
 
-        const result = await api.updateTransaction(transactionId, title, mode, billUrl, date);
+        const result = await api.updateTransaction(transactionId, title, mode, amount, billUrl, date);
 
         if (result && result.success) {
             showEditTransactionSuccess('Transaction updated successfully!');
@@ -1053,7 +1064,7 @@ async function loadUserTransactions() {
             const tid = transaction.transaction_id || transaction.id;
             const userTxn = userTransactionMap[tid];
             const status = userTxn?.status || 'pending';
-            const amount = userTxn?.amount || 0;
+            const amount = userTxn?.amount || transaction.amount || 0;
             
             const mode = transaction.mode || 'to get';
             const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
@@ -1077,7 +1088,6 @@ async function loadUserTransactions() {
                 `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
                 '<span class="text-gray-400 text-sm">No bill uploaded</span>';
 
-            // User update date if available
             const userUpdateDate = userTxn?.date || 'N/A';
             const formattedUserDate = userUpdateDate !== 'N/A' ? new Date(userUpdateDate).toLocaleString('en-US', {
                 year: 'numeric',
@@ -1118,20 +1128,20 @@ async function loadUserTransactions() {
                                     <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
                                 </div>
                                 <div>
+                                    <div class="detail-label">Amount</div>
+                                    <div class="detail-value transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : status === 'no' ? 'no' : 'give'}">₹${amount}</div>
+                                </div>
+                                <div>
                                     <div class="detail-label">Date & Time</div>
                                     <div class="detail-value">${formattedDate}</div>
                                 </div>
-                                <div>
+                                <div class="md:col-span-2">
                                     <div class="detail-label">Bill</div>
                                     <div class="detail-value">${billLink}</div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Status</div>
                                     <div class="detail-value"><span class="transaction-status-badge ${statusClass}">${status}</span></div>
-                                </div>
-                                <div>
-                                    <div class="detail-label">Amount</div>
-                                    <div class="detail-value transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : status === 'no' ? 'no' : 'give'}">₹${amount}</div>
                                 </div>
                                 ${status !== 'pending' ? `
                                     <div>
