@@ -1,9 +1,22 @@
-// ================================================================
-// Google Sheets API Wrapper
-// ================================================================
+// 🌐 Global Variables
+let currentUser = null;
+let currentPage = 'adminTransactions';
+let currentEditTransaction = null;
+let currentUserAction = null;
+
+// Cache for better performance
+let dataCache = {
+    users: null,
+    transactions: null,
+    lastUpdated: null
+};
+
+// =============================
+// 📊 Google Sheets Integration
+// =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbzpeKEtwqIaq1Bk5dspezdoozszk0b1s9hA5Bs66RxoRqXi84409GgE2bTCahX7KtRvEQ/exec"; // <-- REPLACE with your deployed URL
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbz5mxKVkjs2pObVCOC-ozG3A87BAC8c4ahhtwsTxOi2xOcmH8xB-ol5aKM9wxdu1QYSzg/exec"; // Replace with your script ID
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -11,22 +24,32 @@ class GoogleSheetsAPI {
 
     initLocalCache() {
         try {
-            const cached = localStorage.getItem('tx_cache');
+            const cached = localStorage.getItem('transaction_cache');
             return cached ? JSON.parse(cached) : {};
-        } catch { return {}; }
+        } catch {
+            return {};
+        }
     }
 
     saveLocalCache() {
-        try { localStorage.setItem('tx_cache', JSON.stringify(this.localCache)); } catch (e) {}
+        try {
+            localStorage.setItem('transaction_cache', JSON.stringify(this.localCache));
+        } catch (e) {
+            console.warn('Failed to save cache:', e);
+        }
     }
 
     async getSheet(sheetName, useCache = true) {
         const cacheKey = sheetName;
         const now = Date.now();
+
         if (useCache && this.cache.has(cacheKey)) {
             const cached = this.cache.get(cacheKey);
-            if (now - cached.timestamp < this.cacheTimeout) return cached.data;
+            if (now - cached.timestamp < this.cacheTimeout) {
+                return cached.data;
+            }
         }
+
         if (useCache && this.localCache[cacheKey]) {
             const cached = this.localCache[cacheKey];
             if (now - cached.timestamp < 5 * 60 * 1000) {
@@ -34,22 +57,47 @@ class GoogleSheetsAPI {
                 return cached.data;
             }
         }
+
         try {
             const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${now}`;
-            const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
             const data = await response.json();
+
             const cacheData = { data, timestamp: now };
             if (useCache) {
                 this.cache.set(cacheKey, cacheData);
                 this.localCache[cacheKey] = cacheData;
                 this.saveLocalCache();
             }
+
             return data;
         } catch (error) {
             console.error(`Error fetching ${sheetName}:`, error);
             return { error: error.message };
         }
+    }
+
+    async getBatchSheets(sheetNames) {
+        const promises = sheetNames.map(name => this.getSheet(name));
+        const results = await Promise.all(promises);
+        const batchResult = {};
+        sheetNames.forEach((name, index) => {
+            batchResult[name] = results[index];
+        });
+        return batchResult;
+    }
+
+    clearCache() {
+        this.cache.clear();
+        this.localCache = {};
+        localStorage.removeItem('transaction_cache');
     }
 
     async addRow(sheetName, row) {
@@ -62,67 +110,17 @@ class GoogleSheetsAPI {
                     data: JSON.stringify(row)
                 })
             });
+
             const result = await response.json();
+
             this.cache.delete(sheetName);
             delete this.localCache[sheetName];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
         }
-    }
-
-    // Upload file: accepts base64 data URL or file object
-    async uploadFile(username, taskId, fileOrDataUrl) {
-        try {
-            let base64Data, fileName, fileType;
-            if (typeof fileOrDataUrl === 'string' && fileOrDataUrl.startsWith('data:image')) {
-                // data URL
-                const parts = fileOrDataUrl.split(',');
-                base64Data = parts[1];
-                const mimeMatch = parts[0].match(/data:(image\/[^;]+)/);
-                fileType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-                fileName = `bill_${taskId}.jpg`;
-            } else if (fileOrDataUrl instanceof File) {
-                base64Data = await this.fileToBase64(fileOrDataUrl);
-                fileName = fileOrDataUrl.name;
-                fileType = fileOrDataUrl.type;
-            } else {
-                throw new Error('Unsupported file type');
-            }
-
-            const payload = {
-                sheet: 'uploads',
-                action: 'uploadFile',
-                username: username,
-                taskId: taskId,
-                fileName: fileName,
-                fileType: fileType,
-                fileData: base64Data
-            };
-
-            const response = await fetch(this.apiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ data: JSON.stringify(payload) })
-            });
-            const result = await response.json();
-            this.cache.delete('uploads');
-            delete this.localCache['uploads'];
-            this.saveLocalCache();
-            return result;
-        } catch (error) {
-            return { error: error.message };
-        }
-    }
-
-    fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = (error) => reject(error);
-        });
     }
 
     async updatePassword(username, newPassword) {
@@ -135,47 +133,186 @@ class GoogleSheetsAPI {
                     data: JSON.stringify([username, newPassword])
                 })
             });
+
             const result = await response.json();
+
             this.cache.delete("user_credentials");
             delete this.localCache["user_credentials"];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
         }
     }
 
-    clearCache() {
-        this.cache.clear();
-        this.localCache = {};
-        localStorage.removeItem('tx_cache');
+    async uploadFile(username, transactionId, file) {
+        try {
+            const base64Data = await this.fileToBase64(file);
+
+            const payload = {
+                sheet: 'uploads',
+                action: 'uploadFile',
+                username: username,
+                transactionId: transactionId,
+                fileName: file.name,
+                fileType: file.type,
+                fileData: base64Data
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
+            });
+
+            const result = await response.json();
+
+            this.cache.delete('uploads');
+            delete this.localCache['uploads'];
+            this.saveLocalCache();
+
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = (error) => reject(error);
+        });
+    }
+
+    async updateTransaction(transactionId, title, mode, billUrl, date) {
+        try {
+            const payload = {
+                action: 'updateTransaction',
+                transactionId: transactionId,
+                title: title,
+                mode: mode,
+                billUrl: billUrl,
+                date: date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
+            });
+
+            const result = await response.json();
+
+            this.cache.delete('transaction_master');
+            delete this.localCache['transaction_master'];
+            this.saveLocalCache();
+
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    async updateUserTransaction(username, transactionId, status, amount, date) {
+        try {
+            const payload = {
+                action: 'updateUserTransaction',
+                username: username,
+                transactionId: transactionId,
+                status: status,
+                amount: amount,
+                date: date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
+            });
+
+            const result = await response.json();
+
+            const cacheKey = `${username}_transactions`;
+            this.cache.delete(cacheKey);
+            delete this.localCache[cacheKey];
+            this.saveLocalCache();
+
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    async getUserTransactions(username) {
+        try {
+            const cacheKey = `${username}_transactions`;
+            
+            if (this.cache.has(cacheKey)) {
+                const cached = this.cache.get(cacheKey);
+                if (Date.now() - cached.timestamp < this.cacheTimeout) {
+                    return cached.data;
+                }
+            }
+
+            const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            
+            const cacheData = { data, timestamp: Date.now() };
+            this.cache.set(cacheKey, cacheData);
+            this.localCache[cacheKey] = cacheData;
+            this.saveLocalCache();
+
+            return data;
+        } catch (error) {
+            console.error(`Error fetching user transactions:`, error);
+            return { error: error.message };
+        }
     }
 }
 
 const api = new GoogleSheetsAPI();
 
-// ================================================================
-// Global State
-// ================================================================
-let currentUser = null;
-let currentPage = 'transactions';
-let editingTxId = null;
-
-// ================================================================
-// Authentication
-// ================================================================
+// =============================
+// 🔑 Authentication
+// =============================
 async function login() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    if (!username || !password) { showError('Enter both fields'); return; }
-    const btn = document.querySelector('#loginForm button[type="submit"]');
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing...';
-    btn.disabled = true;
+
+    if (!username || !password) {
+        showError('Please enter both username and password');
+        return;
+    }
+
+    const loginBtn = document.querySelector('#loginForm button[type="submit"]');
+    const originalText = loginBtn.innerHTML;
+    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
+    loginBtn.disabled = true;
+
     try {
         const users = await api.getSheet("user_credentials", false);
-        if (!users || users.error || !Array.isArray(users)) { showError('Failed to fetch users'); return; }
+
+        if (!users || users.error || !Array.isArray(users)) {
+            showError('Failed to fetch user data');
+            return;
+        }
+
         const user = users.find(u => u.username === username && u.password === password);
+
         if (user) {
             currentUser = {
                 username: user.username,
@@ -183,35 +320,47 @@ async function login() {
                 role: user.role || 'user',
                 userId: user.username
             };
-            sessionStorage.setItem('cce_session', JSON.stringify({ user: currentUser, timestamp: Date.now() }));
+
+            sessionStorage.setItem('transaction_session', JSON.stringify({
+                user: currentUser,
+                timestamp: Date.now()
+            }));
+
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('dashboardContainer').classList.remove('hidden');
             document.getElementById('welcomeUser').textContent = `Welcome, ${currentUser.name}`;
             loadUserProfile(username);
+
             if (currentUser.role === 'admin') {
-                document.getElementById('studentNav').classList.add('hidden');
+                document.getElementById('userNav').classList.add('hidden');
                 document.getElementById('adminNav').classList.remove('hidden');
-                await loadAdminTxPage();
-                showPage('adminTx');
+                await loadAdminData();
+                showPage('adminTransactions');
             } else {
-                document.getElementById('studentNav').classList.remove('hidden');
                 document.getElementById('adminNav').classList.add('hidden');
+                document.getElementById('userNav').classList.remove('hidden');
                 await loadUserTransactions();
-                showPage('transactions');
+                showPage('userTransactions');
             }
+            setTimeout(() => preloadCriticalData(), 100);
             hideError();
             history.pushState(null, '', window.location.href);
         } else {
             showError('Invalid username or password');
         }
-    } catch (e) { showError('Network error: ' + e.message); } finally { btn.innerHTML = orig;
-        btn.disabled = false; }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        loginBtn.innerHTML = originalText;
+        loginBtn.disabled = false;
+    }
 }
 
 function logout() {
-    sessionStorage.removeItem('cce_session');
+    sessionStorage.removeItem('transaction_session');
     currentUser = null;
     api.clearCache();
+    
     document.getElementById('loginPage').classList.remove('hidden');
     document.getElementById('dashboardContainer').classList.add('hidden');
     document.getElementById('username').value = '';
@@ -221,10 +370,946 @@ function logout() {
     history.pushState(null, '', window.location.href);
 }
 
-// Session restore
-(function restoreSession() {
-    const saved = sessionStorage.getItem('cce_session');
-    if (saved) {
+// =============================
+// 📍 Navigation
+// =============================
+async function showPage(page) {
+    document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600', 'border-green-500', 'text-green-600');
+        btn.classList.add('border-transparent');
+    });
+
+    document.getElementById(page + 'Page').classList.remove('hidden');
+
+    const clickedBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => {
+        const btnText = btn.textContent.toLowerCase();
+        return btnText.includes(page.replace('admin', '').replace('user', '').toLowerCase());
+    });
+
+    if (clickedBtn) {
+        if (currentUser && currentUser.role === 'admin') {
+            clickedBtn.classList.add('border-blue-500', 'text-blue-600');
+        } else {
+            clickedBtn.classList.add('border-green-500', 'text-green-600');
+        }
+    }
+
+    currentPage = page;
+
+    if (page === 'adminTransactions') {
+        await loadAdminTransactions();
+    } else if (page === 'adminUsers') {
+        await loadAdminUsers();
+    } else if (page === 'userTransactions') {
+        await loadUserTransactions();
+    }
+}
+
+// =============================
+// 👨‍💼 Admin Functions
+// =============================
+async function loadAdminData() {
+    try {
+        await loadAdminTransactions();
+    } catch (error) {
+        console.error('Error loading admin data:', error);
+    }
+}
+
+async function loadAdminTransactions() {
+    const container = document.getElementById('adminTransactionsList');
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i><p class="mt-2 text-gray-500">Loading transactions...</p></div>';
+
+    try {
+        const transactions = await api.getSheet('transaction_master');
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-exchange-alt text-4xl mb-3"></i><p>No transactions found. Click "Add Transaction" to create one.</p></div>';
+            return;
+        }
+
+        const sortedTransactions = transactions.sort((a, b) => {
+            const dateA = new Date(a.date || a.transaction_date || 0);
+            const dateB = new Date(b.date || b.transaction_date || 0);
+            return dateB - dateA;
+        });
+
+        const html = sortedTransactions.map(transaction => {
+            const mode = transaction.mode || 'to get';
+            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            
+            const dateStr = transaction.date || transaction.transaction_date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ? 
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
+                '<span class="text-gray-400 text-sm">No bill uploaded</span>';
+
+            return `
+                <div class="transaction-card">
+                    <div class="transaction-header" onclick="toggleTransactionDetails('${transaction.transaction_id || transaction.id}')">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="mode-badge ${modeClass}">${mode}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${transaction.transaction_id || transaction.id}"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="details-container" id="details-${transaction.transaction_id || transaction.id}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <div class="detail-label">Transaction ID</div>
+                                    <div class="detail-value">${transaction.transaction_id || transaction.id || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Mode</div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Date & Time</div>
+                                    <div class="detail-value">${formattedDate}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Bill</div>
+                                    <div class="detail-value">${billLink}</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <button onclick="event.stopPropagation(); openEditTransactionModal('${transaction.transaction_id || transaction.id}')" class="edit-btn">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading admin transactions:', error);
+        container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Error loading transactions. Please try again.</p></div>';
+    }
+}
+
+function toggleTransactionDetails(id) {
+    const container = document.getElementById(`details-${id}`);
+    const arrow = document.getElementById(`arrow-${id}`);
+
+    if (container && arrow) {
+        if (!container.classList.contains('expanded')) {
+            document.querySelectorAll('.details-container.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+            document.querySelectorAll('.expand-arrow.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+
+            container.classList.add('expanded');
+            arrow.classList.add('expanded');
+        } else {
+            container.classList.remove('expanded');
+            arrow.classList.remove('expanded');
+        }
+    }
+}
+
+async function loadAdminUsers() {
+    const container = document.getElementById('adminUsersList');
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i><p class="mt-2 text-gray-500">Loading users...</p></div>';
+
+    try {
+        const users = await api.getSheet('user_credentials');
+
+        if (!users || users.error || !Array.isArray(users) || users.length === 0) {
+            container.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-users text-4xl mb-3"></i><p>No users found.</p></div>';
+            return;
+        }
+
+        const allTransactions = await api.getSheet('transaction_master');
+        const transactionMap = {};
+        if (allTransactions && Array.isArray(allTransactions)) {
+            allTransactions.forEach(t => {
+                transactionMap[t.transaction_id || t.id] = t;
+            });
+        }
+
+        const userPromises = users.map(async (user) => {
+            const userTransactions = await api.getUserTransactions(user.username);
+            return {
+                ...user,
+                transactions: userTransactions && Array.isArray(userTransactions) ? userTransactions : []
+            };
+        });
+
+        const usersWithTransactions = await Promise.all(userPromises);
+
+        const html = usersWithTransactions.map(user => {
+            const initials = user.full_name ? 
+                user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 
+                user.username.substring(0, 2).toUpperCase();
+
+            const transactionItems = user.transactions.map(t => {
+                const transaction = transactionMap[t.transaction_id];
+                const title = transaction ? transaction.title : 'Unknown';
+                const status = t.status || 'pending';
+                const statusClass = status === 'completed' ? 'completed' : 
+                                   status === 'no' ? 'no' :
+                                   status === 'to get' ? 'get' : 'give';
+                const amount = t.amount || 0;
+                const amountClass = status === 'to get' ? 'get' : 
+                                   status === 'completed' ? 'get' : 'give';
+
+                return `
+                    <div class="user-transaction-item">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-medium">${title}</div>
+                                <div class="text-sm text-gray-500">${t.date || 'N/A'}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="transaction-status-badge ${statusClass}">${status}</span>
+                                ${amount > 0 ? `<div class="transaction-amount ${amountClass}">₹${amount}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="user-card" id="user-card-${user.username}" onclick="toggleUserExpand('${user.username}')">
+                    <div class="user-card-inner">
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-name">${user.full_name || user.username}</div>
+                        <div class="user-username">@${user.username}</div>
+                        <div class="text-xs text-gray-600 mt-2">
+                            ${user.transactions.length} transactions
+                        </div>
+                        <div class="mt-2">
+                            <i class="fas fa-chevron-down expand-toggle-icon" id="expand-icon-${user.username}"></i>
+                        </div>
+                    </div>
+                    <div class="user-expand-content" id="expand-content-${user.username}">
+                        ${transactionItems || '<div class="text-center text-gray-500 py-4">No transactions for this user</div>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading admin users:', error);
+        container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Error loading users. Please try again.</p></div>';
+    }
+}
+
+function toggleUserExpand(username) {
+    const content = document.getElementById(`expand-content-${username}`);
+    const card = document.getElementById(`user-card-${username}`);
+    const icon = document.getElementById(`expand-icon-${username}`);
+
+    if (!content) return;
+
+    if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        card.classList.remove('expanded');
+        if (icon) icon.classList.remove('rotated');
+        return;
+    }
+
+    document.querySelectorAll('.user-expand-content.open').forEach(el => {
+        el.classList.remove('open');
+        const parentCard = el.closest('.user-card');
+        if (parentCard) parentCard.classList.remove('expanded');
+        const iconId = el.id.replace('expand-content-', 'expand-icon-');
+        const otherIcon = document.getElementById(iconId);
+        if (otherIcon) otherIcon.classList.remove('rotated');
+    });
+
+    content.classList.add('open');
+    card.classList.add('expanded');
+    if (icon) icon.classList.add('rotated');
+}
+
+// =============================
+// ➕ Add Transaction Functions
+// =============================
+async function openAddTransactionModal() {
+    const modal = document.getElementById('addTransactionModal');
+    const form = document.getElementById('addTransactionForm');
+    form.reset();
+    document.getElementById('addTransactionError').classList.add('hidden');
+    document.getElementById('addTransactionSuccess').classList.add('hidden');
+
+    const nextId = await getNextTransactionId();
+    document.getElementById('autoTransactionId').value = nextId;
+
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    document.getElementById('transactionDate').value = localDateTime.toISOString().slice(0, 16);
+
+    modal.classList.remove('hidden');
+}
+
+function closeAddTransactionModal() {
+    document.getElementById('addTransactionModal').classList.add('hidden');
+}
+
+async function getNextTransactionId() {
+    try {
+        const transactions = await api.getSheet('transaction_master');
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            return 'TRN001';
+        }
+
+        const ids = transactions
+            .map(t => t.transaction_id || t.id)
+            .filter(id => id && id.startsWith('TRN'))
+            .map(id => {
+                const num = parseInt(id.substring(3));
+                return isNaN(num) ? 0 : num;
+            });
+
+        if (ids.length === 0) return 'TRN001';
+
+        const nextNum = Math.max(...ids) + 1;
+        return `TRN${String(nextNum).padStart(3, '0')}`;
+    } catch (error) {
+        console.error('Error generating transaction ID:', error);
+        return 'TRN001';
+    }
+}
+
+async function submitAddTransaction(event) {
+    event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+        submitBtn.disabled = true;
+
+        const transactionId = document.getElementById('autoTransactionId').value;
+        const title = document.getElementById('transactionTitle').value.trim();
+        const mode = document.getElementById('transactionMode').value;
+        const date = document.getElementById('transactionDate').value;
+        const fileInput = document.getElementById('billUpload');
+
+        if (!title || !mode || !date) {
+            showAddTransactionError('Please fill in all required fields');
+            return;
+        }
+
+        let billUrl = '';
+
+        if (fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                showAddTransactionError('File size must be less than 5MB');
+                return;
+            }
+
+            const uploadResult = await api.uploadFile('admin', transactionId, file);
+
+            if (uploadResult && uploadResult.success) {
+                billUrl = uploadResult.fileUrl || '';
+            } else {
+                showAddTransactionError('Failed to upload bill: ' + (uploadResult?.error || 'Unknown error'));
+                return;
+            }
+        }
+
+        const rowData = [
+            transactionId,
+            title,
+            mode,
+            billUrl,
+            date
+        ];
+
+        const result = await api.addRow('transaction_master', rowData);
+
+        if (result && (result.success || result.message?.includes('Success'))) {
+            showAddTransactionSuccess('Transaction added successfully!');
+            setTimeout(() => {
+                closeAddTransactionModal();
+                loadAdminTransactions();
+            }, 1500);
+        } else {
+            throw new Error(result?.error || 'Failed to add transaction');
+        }
+
+    } catch (error) {
+        console.error('Error adding transaction:', error);
+        showAddTransactionError('Error: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showAddTransactionError(message) {
+    const errorDiv = document.getElementById('addTransactionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('addTransactionSuccess').classList.add('hidden');
+}
+
+function showAddTransactionSuccess(message) {
+    const successDiv = document.getElementById('addTransactionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('addTransactionError').classList.add('hidden');
+}
+
+// =============================
+// ✏️ Edit Transaction Functions
+// =============================
+async function openEditTransactionModal(transactionId) {
+    const modal = document.getElementById('editTransactionModal');
+    const form = document.getElementById('editTransactionForm');
+    form.reset();
+    document.getElementById('editTransactionError').classList.add('hidden');
+    document.getElementById('editTransactionSuccess').classList.add('hidden');
+
+    try {
+        const transactions = await api.getSheet('transaction_master');
+        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+
+        if (!transaction) {
+            alert('Transaction not found!');
+            return;
+        }
+
+        currentEditTransaction = transaction;
+
+        document.getElementById('editTransactionId').value = transaction.transaction_id || transaction.id;
+        document.getElementById('editTransactionTitle').value = transaction.title || '';
+        document.getElementById('editTransactionMode').value = transaction.mode || 'to get';
+
+        const dateStr = transaction.date || transaction.transaction_date || '';
+        if (dateStr) {
+            const date = new Date(dateStr);
+            const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            document.getElementById('editTransactionDate').value = localDateTime.toISOString().slice(0, 16);
+        }
+
+        const currentBillDiv = document.getElementById('editCurrentBill');
+        if (transaction.bill_url) {
+            currentBillDiv.innerHTML = `
+                <p class="text-sm text-gray-600">
+                    <i class="fas fa-file-image mr-1 text-blue-500"></i>
+                    Current bill: <a href="${transaction.bill_url}" target="_blank" class="bill-link">View Bill</a>
+                </p>
+            `;
+        } else {
+            currentBillDiv.innerHTML = '<p class="text-sm text-gray-400">No bill currently uploaded</p>';
+        }
+
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error opening edit transaction:', error);
+        alert('Error loading transaction details. Please try again.');
+    }
+}
+
+function closeEditTransactionModal() {
+    document.getElementById('editTransactionModal').classList.add('hidden');
+    currentEditTransaction = null;
+}
+
+async function submitEditTransaction(event) {
+    event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+        submitBtn.disabled = true;
+
+        const transactionId = document.getElementById('editTransactionId').value;
+        const title = document.getElementById('editTransactionTitle').value.trim();
+        const mode = document.getElementById('editTransactionMode').value;
+        const date = document.getElementById('editTransactionDate').value;
+        const fileInput = document.getElementById('editBillUpload');
+
+        if (!title || !mode || !date) {
+            showEditTransactionError('Please fill in all required fields');
+            return;
+        }
+
+        let billUrl = currentEditTransaction?.bill_url || '';
+
+        if (fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                showEditTransactionError('File size must be less than 5MB');
+                return;
+            }
+
+            const uploadResult = await api.uploadFile('admin', transactionId, file);
+
+            if (uploadResult && uploadResult.success) {
+                billUrl = uploadResult.fileUrl || '';
+            } else {
+                showEditTransactionError('Failed to upload bill: ' + (uploadResult?.error || 'Unknown error'));
+                return;
+            }
+        }
+
+        const result = await api.updateTransaction(transactionId, title, mode, billUrl, date);
+
+        if (result && result.success) {
+            showEditTransactionSuccess('Transaction updated successfully!');
+            setTimeout(() => {
+                closeEditTransactionModal();
+                loadAdminTransactions();
+            }, 1500);
+        } else {
+            throw new Error(result?.error || 'Failed to update transaction');
+        }
+
+    } catch (error) {
+        console.error('Error updating transaction:', error);
+        showEditTransactionError('Error: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showEditTransactionError(message) {
+    const errorDiv = document.getElementById('editTransactionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('editTransactionSuccess').classList.add('hidden');
+}
+
+function showEditTransactionSuccess(message) {
+    const successDiv = document.getElementById('editTransactionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('editTransactionError').classList.add('hidden');
+}
+
+// =============================
+// 👤 User Functions
+// =============================
+async function loadUserTransactions() {
+    const container = document.getElementById('userTransactionsList');
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-green-500"></i><p class="mt-2 text-gray-500">Loading transactions...</p></div>';
+
+    try {
+        const transactions = await api.getSheet('transaction_master');
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-exchange-alt text-4xl mb-3"></i><p>No transactions available.</p></div>';
+            return;
+        }
+
+        const userTransactions = await api.getUserTransactions(currentUser.username);
+        const userTransactionMap = {};
+        if (userTransactions && Array.isArray(userTransactions)) {
+            userTransactions.forEach(t => {
+                userTransactionMap[t.transaction_id] = t;
+            });
+        }
+
+        const sortedTransactions = transactions.sort((a, b) => {
+            const dateA = new Date(a.date || a.transaction_date || 0);
+            const dateB = new Date(b.date || b.transaction_date || 0);
+            return dateB - dateA;
+        });
+
+        const html = sortedTransactions.map(transaction => {
+            const tid = transaction.transaction_id || transaction.id;
+            const userTxn = userTransactionMap[tid];
+            const status = userTxn?.status || 'pending';
+            const amount = userTxn?.amount || 0;
+            
+            const mode = transaction.mode || 'to get';
+            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            
+            const statusClass = status === 'completed' ? 'completed' : 
+                               status === 'no' ? 'no' :
+                               status === 'to get' ? 'get' : 'give';
+            
+            const dateStr = transaction.date || transaction.transaction_date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ? 
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
+                '<span class="text-gray-400 text-sm">No bill uploaded</span>';
+
+            const isPending = status === 'pending' || !userTxn;
+
+            return `
+                <div class="transaction-card" onclick="toggleUserTransactionDetails('${tid}')">
+                    <div class="transaction-header">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            ${status !== 'pending' ? `<span class="transaction-status-badge ${statusClass}">${status}</span>` : ''}
+                            ${amount > 0 ? `<span class="transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : 'give'}">₹${amount}</span>` : ''}
+                            <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="details-container" id="user-details-${tid}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <div class="detail-label">Transaction ID</div>
+                                    <div class="detail-value">${tid}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Mode</div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Date & Time</div>
+                                    <div class="detail-value">${formattedDate}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Bill</div>
+                                    <div class="detail-value">${billLink}</div>
+                                </div>
+                                ${status !== 'pending' ? `
+                                    <div>
+                                        <div class="detail-label">Status</div>
+                                        <div class="detail-value"><span class="transaction-status-badge ${statusClass}">${status}</span></div>
+                                    </div>
+                                    <div>
+                                        <div class="detail-label">Amount</div>
+                                        <div class="detail-value transaction-amount ${status === 'to get' || status === 'completed' ? 'get' : 'give'}">₹${amount}</div>
+                                    </div>
+                                    <div>
+                                        <div class="detail-label">Update Date</div>
+                                        <div class="detail-value">${userTxn?.date || 'N/A'}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${isPending ? `
+                                <div class="mt-3">
+                                    <button onclick="event.stopPropagation(); openUserActionModal('${tid}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300 text-sm">
+                                        <i class="fas fa-pen mr-1"></i>Update Status
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading user transactions:', error);
+        container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Error loading transactions. Please try again.</p></div>';
+    }
+}
+
+function toggleUserTransactionDetails(id) {
+    const container = document.getElementById(`user-details-${id}`);
+    const arrow = document.getElementById(`user-arrow-${id}`);
+
+    if (container && arrow) {
+        if (!container.classList.contains('expanded')) {
+            document.querySelectorAll('.details-container.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+            document.querySelectorAll('.expand-arrow.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+
+            container.classList.add('expanded');
+            arrow.classList.add('expanded');
+        } else {
+            container.classList.remove('expanded');
+            arrow.classList.remove('expanded');
+        }
+    }
+}
+
+// =============================
+// 👤 User Action Modal Functions
+// =============================
+async function openUserActionModal(transactionId) {
+    const modal = document.getElementById('userActionModal');
+    const form = document.getElementById('userActionForm');
+    form.reset();
+    document.getElementById('userActionError').classList.add('hidden');
+    document.getElementById('userActionSuccess').classList.add('hidden');
+
+    try {
+        const transactions = await api.getSheet('transaction_master');
+        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+
+        if (!transaction) {
+            alert('Transaction not found!');
+            return;
+        }
+
+        currentUserAction = transactionId;
+
+        document.getElementById('userActionTransactionId').value = transactionId;
+        document.getElementById('userActionTitle').value = transaction.title || 'Untitled';
+
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        document.getElementById('userActionDate').value = localDateTime.toISOString().slice(0, 16);
+
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error opening user action modal:', error);
+        alert('Error loading transaction details. Please try again.');
+    }
+}
+
+function closeUserActionModal() {
+    document.getElementById('userActionModal').classList.add('hidden');
+    currentUserAction = null;
+}
+
+async function submitUserAction(event) {
+    event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+        submitBtn.disabled = true;
+
+        const transactionId = document.getElementById('userActionTransactionId').value;
+        const status = document.getElementById('userActionStatus').value;
+        const amount = parseInt(document.getElementById('userActionAmount').value);
+        const date = document.getElementById('userActionDate').value;
+
+        if (!status || isNaN(amount) || amount < 0) {
+            showUserActionError('Please fill in all required fields with valid values');
+            return;
+        }
+
+        const result = await api.updateUserTransaction(
+            currentUser.username,
+            transactionId,
+            status,
+            amount,
+            date
+        );
+
+        if (result && result.success) {
+            showUserActionSuccess('Transaction updated successfully!');
+            setTimeout(() => {
+                closeUserActionModal();
+                loadUserTransactions();
+            }, 1500);
+        } else {
+            throw new Error(result?.error || 'Failed to update transaction');
+        }
+
+    } catch (error) {
+        console.error('Error updating user transaction:', error);
+        showUserActionError('Error: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showUserActionError(message) {
+    const errorDiv = document.getElementById('userActionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('userActionSuccess').classList.add('hidden');
+}
+
+function showUserActionSuccess(message) {
+    const successDiv = document.getElementById('userActionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('userActionError').classList.add('hidden');
+}
+
+// =============================
+// 🔐 Change Password Functions
+// =============================
+function openChangePasswordModal() {
+    document.getElementById('profileMenu').classList.add('hidden');
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+    document.getElementById('changePasswordForm').reset();
+    document.getElementById('changePasswordError').classList.add('hidden');
+    document.getElementById('changePasswordSuccess').classList.add('hidden');
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.add('hidden');
+}
+
+async function changePassword(event) {
+    event.preventDefault();
+
+    const currentPassword = document.getElementById('currentPassword').value.trim();
+    const newPassword = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+    const errorDiv = document.getElementById('changePasswordError');
+    const successDiv = document.getElementById('changePasswordSuccess');
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+
+    errorDiv.classList.add('hidden');
+    successDiv.classList.add('hidden');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showChangePasswordError('Please fill in all fields');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        showChangePasswordError('New password must be at least 6 characters long');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showChangePasswordError('New passwords do not match');
+        return;
+    }
+
+    if (newPassword === currentPassword) {
+        showChangePasswordError('New password must be different from current password');
+        return;
+    }
+
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Changing Password...';
+    submitBtn.disabled = true;
+
+    try {
+        const users = await api.getSheet("user_credentials", false);
+
+        if (!users || users.error || !Array.isArray(users)) {
+            throw new Error('Failed to fetch user data');
+        }
+
+        const user = users.find(u => {
+            if (!u.username || !u.password) return false;
+            return String(u.username).toLowerCase().trim() === String(currentUser.username).toLowerCase().trim() &&
+                   String(u.password).trim() === String(currentPassword).trim();
+        });
+
+        if (!user) {
+            throw new Error('Current password is incorrect');
+        }
+
+        const updateResult = await api.updatePassword(currentUser.username, newPassword);
+
+        if (updateResult && updateResult.success) {
+            showChangePasswordSuccess('Password changed successfully! You will be logged out in 3 seconds.');
+            document.getElementById('changePasswordForm').reset();
+            setTimeout(() => {
+                closeChangePasswordModal();
+                logout();
+            }, 3000);
+        } else {
+            throw new Error(updateResult?.error || 'Failed to update password');
+        }
+
+    } catch (error) {
+        console.error('Error changing password:', error);
+        showChangePasswordError(error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showChangePasswordError(message) {
+    const errorDiv = document.getElementById('changePasswordError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function showChangePasswordSuccess(message) {
+    const successDiv = document.getElementById('changePasswordSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+}
+
+// =============================
+// 🎯 Event Listeners
+// =============================
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitSignup();
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        login();
+    });
+
+    document.getElementById('addTransactionForm').addEventListener('submit', submitAddTransaction);
+    document.getElementById('editTransactionForm').addEventListener('submit', submitEditTransaction);
+    document.getElementById('userActionForm').addEventListener('submit', submitUserAction);
+    document.getElementById('changePasswordForm').addEventListener('submit', changePassword);
+
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+                if (this.id === 'addTransactionModal') closeAddTransactionModal();
+                if (this.id === 'editTransactionModal') closeEditTransactionModal();
+                if (this.id === 'userActionModal') closeUserActionModal();
+                if (this.id === 'changePasswordModal') closeChangePasswordModal();
+            }
+        });
+    });
+});
+
+// Restore session on load (fallback)
+(function() {
+    const saved = sessionStorage.getItem('transaction_session');
+    if (saved && !currentUser) {
         try {
             const data = JSON.parse(saved);
             if (data.user && data.timestamp && (Date.now() - data.timestamp < 24 * 60 * 60 * 1000)) {
@@ -234,731 +1319,18 @@ function logout() {
                 document.getElementById('welcomeUser').textContent = `Welcome, ${currentUser.name}`;
                 loadUserProfile(currentUser.username);
                 if (currentUser.role === 'admin') {
-                    document.getElementById('studentNav').classList.add('hidden');
+                    document.getElementById('userNav').classList.add('hidden');
                     document.getElementById('adminNav').classList.remove('hidden');
-                    loadAdminTxPage().then(() => showPage('adminTx'));
+                    loadAdminData().then(() => showPage('adminTransactions'));
                 } else {
-                    document.getElementById('studentNav').classList.remove('hidden');
                     document.getElementById('adminNav').classList.add('hidden');
-                    loadUserTransactions().then(() => showPage('transactions'));
+                    document.getElementById('userNav').classList.remove('hidden');
+                    loadUserTransactions().then(() => showPage('userTransactions'));
                 }
-            } else { sessionStorage.removeItem('cce_session'); }
-        } catch (e) { sessionStorage.removeItem('cce_session'); }
+                setTimeout(() => preloadCriticalData(), 100);
+            }
+        } catch (e) {}
     }
 })();
 
-// ================================================================
-// UI Helpers
-// ================================================================
-function showError(msg) { const d = document.getElementById('loginError');
-    d.textContent = msg;
-    d.classList.remove('hidden'); }
-
-function hideError() { document.getElementById('loginError').classList.add('hidden'); }
-
-function showSignup() {
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('signupSection').classList.remove('hidden');
-    hideError();
-}
-
-function showLogin() {
-    document.getElementById('signupSection').classList.add('hidden');
-    document.getElementById('loginSection').classList.remove('hidden');
-    hideSignupError();
-    hideSignupSuccess();
-}
-
-function showSignupError(m) { const d = document.getElementById('signupError');
-    d.textContent = m;
-    d.classList.remove('hidden'); }
-
-function hideSignupError() { document.getElementById('signupError').classList.add('hidden'); }
-
-function showSignupSuccess(m) { const d = document.getElementById('signupSuccess');
-    d.textContent = m;
-    d.classList.remove('hidden'); }
-
-function hideSignupSuccess() { document.getElementById('signupSuccess').classList.add('hidden'); }
-
-async function submitSignup() {
-    const name = document.getElementById('signupName').value.trim();
-    const phone = document.getElementById('signupPhone').value.trim();
-    const gmail = document.getElementById('signupGmail').value.trim();
-    const state = document.getElementById('signupState').value.trim();
-    const district = document.getElementById('signupDistrict').value.trim();
-    const place = document.getElementById('signupPlace').value.trim();
-    const po = document.getElementById('signupPO').value.trim();
-    const pin = document.getElementById('signupPinCode').value.trim();
-    if (!name || !phone || !state || !district || !place || !po || !pin) { showSignupError('Fill all required'); return; }
-    if (!/^\d{6}$/.test(pin)) { showSignupError('Invalid pin code'); return; }
-    const btn = document.querySelector('#signupForm button[type="submit"]');
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
-    btn.disabled = true;
-    try {
-        const result = await api.addRow('registration', [name, phone, gmail || '', state, district, place, po, pin,
-            new Date().toISOString().split('T')[0]
-        ]);
-        if (result && (result.success || result.message?.includes('Success'))) {
-            showSignupSuccess('Account created! Contact admin for credentials.');
-            document.getElementById('signupForm').reset();
-            hideSignupError();
-        } else { throw new Error(result?.error || 'Unknown error'); }
-    } catch (e) { showSignupError('Registration failed: ' + e.message); } finally { btn.innerHTML = orig;
-        btn.disabled = false; }
-}
-
-function toggleProfileMenu() {
-    const m = document.getElementById('profileMenu');
-    m.classList.toggle('hidden');
-}
-
-function showProfileFallback(img) {
-    const fb = document.getElementById('profileFallback');
-    img.style.display = 'none';
-    fb.classList.remove('hidden');
-}
-
-function loadUserProfile(username) {
-    const pic = document.getElementById('profilePic');
-    const fb = document.getElementById('profileFallback');
-    pic.src = `https://quaf.tech/pic/${username}.png`;
-    pic.onerror = function() {
-        this.onerror = function() {
-            this.onerror = function() { this.style.display = 'none';
-                fb.classList.remove('hidden'); };
-            this.src = `https://quaf.tech/pic/${username}.jpeg`;
-        };
-        this.src = `https://quaf.tech/pic/${username}.jpg`;
-    };
-    pic.style.display = 'block';
-    fb.classList.add('hidden');
-    if (currentUser) {
-        document.getElementById('profileName').textContent = currentUser.name;
-        document.getElementById('profileUsername').textContent = `@${username}`;
-    }
-}
-
-document.addEventListener('click', function(e) {
-    const container = e.target.closest('.profile-pic-container');
-    const menu = document.getElementById('profileMenu');
-    if (!container && menu && !menu.classList.contains('hidden')) menu.classList.add('hidden');
-});
-
-function showToast(msg, type = 'success') {
-    const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
-    el.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-1"></i>${msg}`;
-    document.body.appendChild(el);
-    setTimeout(() => { if (el.parentElement) el.remove(); }, 4000);
-}
-
-function formatDate(dateStr) {
-    try {
-        const d = new Date(dateStr);
-        if (isNaN(d)) return dateStr;
-        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return dateStr; }
-}
-
-// ================================================================
-// Navigation
-// ================================================================
-async function showPage(page) {
-    document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('border-blue-500', 'text-blue-600'));
-    document.getElementById(page + 'Page').classList.remove('hidden');
-    const btns = document.querySelectorAll('.nav-btn');
-    btns.forEach(b => {
-        const txt = b.textContent.toLowerCase();
-        if (page === 'transactions' && txt.includes('transactions')) b.classList.add('border-blue-500',
-            'text-blue-600');
-        else if (page === 'adminTx' && txt.includes('transactions')) b.classList.add('border-blue-500',
-            'text-blue-600');
-        else if (page === 'adminUsers' && txt.includes('users')) b.classList.add('border-blue-500',
-            'text-blue-600');
-    });
-    currentPage = page;
-    if (page === 'transactions') await loadUserTransactions();
-    else if (page === 'adminTx') await loadAdminTxPage();
-    else if (page === 'adminUsers') await loadAllUsersAdmin();
-}
-
-// ================================================================
-// Admin: Transactions
-// ================================================================
-async function loadAdminTxPage() {
-    await Promise.all([loadAdminTxList(), loadAdminUsersWithTx()]);
-}
-
-async function loadAdminTxList() {
-    const container = document.getElementById('adminTxList');
-    try {
-        const transactions = await getTransactionMaster();
-        if (!transactions.length) {
-            container.innerHTML =
-                `<div class="text-center py-6 text-gray-500"><i class="fas fa-inbox text-3xl mb-2"></i><p>No transactions yet.</p></div>`;
-            return;
-        }
-        transactions.sort((a, b) => {
-            const da = a.transaction_date || '';
-            const db = b.transaction_date || '';
-            if (da !== db) return da < db ? 1 : -1;
-            return (a.transaction_time || '') < (b.transaction_time || '') ? 1 : -1;
-        });
-        let html = `<div class="space-y-2">`;
-        transactions.forEach(tx => {
-            const mode = tx.mode || '';
-            const badgeClass = mode === 'to get' ? 'badge-get' : 'badge-give';
-            const dateStr = tx.transaction_date ? formatDate(tx.transaction_date) : 'N/A';
-            const timeStr = tx.transaction_time || '';
-            const hasBill = tx.bill_url && tx.bill_url.trim() !== '';
-            html += `
-                        <div class="tx-card">
-                            <div class="tx-card-header" onclick="toggleTxCard(this)">
-                                <div class="flex items-center gap-3 min-w-0 flex-1">
-                                    <span class="font-mono text-sm bg-gray-100 px-2 py-0.5 rounded">${tx.transaction_id || 'N/A'}</span>
-                                    <span class="tx-title truncate">${tx.title || 'Untitled'}</span>
-                                    <span class="tx-badge ${badgeClass}">${mode || 'N/A'}</span>
-                                </div>
-                                <div class="flex items-center gap-2 flex-shrink-0">
-                                    <span class="text-xs text-gray-500">${dateStr} ${timeStr}</span>
-                                    <button onclick="event.stopPropagation();openEditTxModal('${tx.transaction_id}')" class="edit-tx-btn" title="Edit">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
-                                </div>
-                            </div>
-                            <div class="tx-card-body">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                    <div><span class="font-medium">ID:</span> ${tx.transaction_id}</div>
-                                    <div><span class="font-medium">Title:</span> ${tx.title || '-'}</div>
-                                    <div><span class="font-medium">Mode:</span> <span class="badge ${badgeClass}">${mode || '-'}</span></div>
-                                    <div><span class="font-medium">Date:</span> ${dateStr} ${timeStr}</div>
-                                    <div class="md:col-span-2">
-                                        <span class="font-medium">Bill:</span>
-                                        ${hasBill ? `<a href="${tx.bill_url}" target="_blank" class="bill-link"><i class="fas fa-image mr-1"></i>View Bill</a>` : '<span class="text-gray-400">No bill uploaded</span>'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = `<p class="text-red-500 text-center">Error loading transactions</p>`;
-    }
-}
-
-function toggleTxCard(header) {
-    const body = header.nextElementSibling;
-    const chevron = header.querySelector('.fa-chevron-down');
-    if (body) {
-        body.classList.toggle('open');
-        if (chevron) chevron.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
-}
-
-// ================================================================
-// Admin: Users with transaction status
-// ================================================================
-async function loadAdminUsersWithTx() {
-    const container = document.getElementById('adminUserCards');
-    try {
-        const [users, transactions] = await Promise.all([getAllUsers(), getTransactionMaster()]);
-        const filtered = users.filter(u => u.role === 'user' || u.role === 'student');
-        if (!filtered.length) {
-            container.innerHTML =
-                `<div class="text-center py-6 text-gray-500"><i class="fas fa-users text-3xl mb-2"></i><p>No users found.</p></div>`;
-            return;
-        }
-        let html = `<div class="space-y-3">`;
-        for (const user of filtered) {
-            const userTx = await getUserTransactionSheet(user.username);
-            const txMap = {};
-            userTx.forEach(ut => { txMap[ut.transaction_id] = ut; });
-            html += `
-                        <div class="user-card">
-                            <div class="user-card-header" onclick="toggleUserCard(this)">
-                                <div class="flex items-center gap-3">
-                                    <div class="avatar avatar-sm">${(user.full_name || user.username).substring(0,2).toUpperCase()}</div>
-                                    <span class="user-name">${user.full_name || user.username}</span>
-                                    <span class="text-xs text-gray-500">@${user.username}</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs text-gray-500">${transactions.length} tx</span>
-                                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
-                                </div>
-                            </div>
-                            <div class="user-card-body">
-                                ${transactions.length ? transactions.map(tx => {
-                                    const status = txMap[tx.transaction_id];
-                                    const statusLabel = status ? status.status || 'pending' : 'pending';
-                                    const badgeClass = statusLabel === 'completed' ? 'badge-completed' : statusLabel === 'no' ? 'badge-no' : statusLabel === 'to get' ? 'badge-get' : statusLabel === 'to give' ? 'badge-give' : 'badge-pending';
-                                    const rupees = status && status.rupees ? status.rupees : '-';
-                                    return `
-                                        <div class="tx-item-row" onclick="event.stopPropagation();openUserTxStatusModal('${user.username}','${user.full_name || user.username}','${tx.transaction_id}','${tx.title || ''}')">
-                                            <div class="flex items-center gap-2 min-w-0 flex-1">
-                                                <span class="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">${tx.transaction_id}</span>
-                                                <span class="truncate text-sm">${tx.title || 'Untitled'}</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 flex-shrink-0">
-                                                <span class="badge ${badgeClass}">${statusLabel}</span>
-                                                ${rupees !== '-' ? `<span class="text-sm font-medium">₹${rupees}</span>` : ''}
-                                                <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('') : '<div class="text-gray-400 text-sm py-2">No transactions available</div>'}
-                            </div>
-                        </div>
-                    `;
-        }
-        html += `</div>`;
-        container.innerHTML = html;
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = `<p class="text-red-500 text-center">Error loading users</p>`;
-    }
-}
-
-function toggleUserCard(header) {
-    const body = header.nextElementSibling;
-    const chevron = header.querySelector('.fa-chevron-down');
-    if (body) {
-        body.classList.toggle('open');
-        if (chevron) chevron.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
-}
-
-// ================================================================
-// Admin: Add / Edit Transaction Modal
-// ================================================================
-async function openAddTxModal() {
-    editingTxId = null;
-    document.getElementById('txModalTitle').textContent = 'Add Transaction';
-    document.getElementById('txEditId').value = '';
-    document.getElementById('txForm').reset();
-    document.getElementById('txBillUrl').value = '';
-    document.getElementById('txBillPreview').classList.add('hidden');
-    document.getElementById('txFormError').classList.add('hidden');
-    document.getElementById('txId').value = await generateTxId();
-    const now = new Date();
-    document.getElementById('txDate').value = now.toISOString().split('T')[0];
-    document.getElementById('txTime').value = now.toTimeString().slice(0, 5);
-    document.getElementById('txModal').classList.remove('hidden');
-}
-
-async function openEditTxModal(txId) {
-    try {
-        const transactions = await getTransactionMaster();
-        const tx = transactions.find(t => t.transaction_id === txId);
-        if (!tx) { showToast('Transaction not found', 'error'); return; }
-        editingTxId = txId;
-        document.getElementById('txModalTitle').textContent = 'Edit Transaction';
-        document.getElementById('txEditId').value = txId;
-        document.getElementById('txId').value = tx.transaction_id || '';
-        document.getElementById('txTitle').value = tx.title || '';
-        document.getElementById('txMode').value = tx.mode || '';
-        document.getElementById('txDate').value = tx.transaction_date || '';
-        document.getElementById('txTime').value = tx.transaction_time || '';
-        document.getElementById('txBillUrl').value = tx.bill_url || '';
-        if (tx.bill_url && tx.bill_url.trim() !== '') {
-            document.getElementById('txBillPreview').classList.remove('hidden');
-            document.getElementById('txBillPreviewImg').src = tx.bill_url;
-            document.getElementById('txBillFileName').textContent = 'Current bill';
-        } else {
-            document.getElementById('txBillPreview').classList.add('hidden');
-        }
-        document.getElementById('txFormError').classList.add('hidden');
-        document.getElementById('txModal').classList.remove('hidden');
-    } catch (e) {
-        showToast('Error loading transaction', 'error');
-        console.error(e);
-    }
-}
-
-function closeTxModal() {
-    document.getElementById('txModal').classList.add('hidden');
-    editingTxId = null;
-}
-
-document.getElementById('txBillFile').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { showToast('Please select an image', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        document.getElementById('txBillPreview').classList.remove('hidden');
-        document.getElementById('txBillPreviewImg').src = ev.target.result;
-        document.getElementById('txBillFileName').textContent = file.name;
-        document.getElementById('txBillUrl').value = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-});
-
-async function generateTxId() {
-    const txs = await getTransactionMaster();
-    if (!txs.length) return 'TX001';
-    const ids = txs.map(t => t.transaction_id).filter(id => id && id.startsWith('TX'));
-    if (!ids.length) return 'TX001';
-    const nums = ids.map(id => parseInt(id.substring(2))).filter(n => !isNaN(n));
-    if (!nums.length) return 'TX001';
-    const next = Math.max(...nums) + 1;
-    return `TX${String(next).padStart(3, '0')}`;
-}
-
-document.getElementById('txForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const err = document.getElementById('txFormError');
-    err.classList.add('hidden');
-    const title = document.getElementById('txTitle').value.trim();
-    const mode = document.getElementById('txMode').value;
-    const txDate = document.getElementById('txDate').value;
-    const txTime = document.getElementById('txTime').value;
-    const billUrl = document.getElementById('txBillUrl').value.trim();
-    const editId = document.getElementById('txEditId').value.trim();
-    if (!title || !mode || !txDate || !txTime) {
-        err.textContent = 'Please fill all required fields.';
-        err.classList.remove('hidden');
-        return;
-    }
-    const btn = document.getElementById('txSubmitBtn');
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-    btn.disabled = true;
-    try {
-        let finalBillUrl = billUrl;
-        if (billUrl && billUrl.startsWith('data:image')) {
-            const uploadResult = await api.uploadFile('admin', 'tx_bill_' + Date.now(), billUrl);
-            if (uploadResult && uploadResult.success) {
-                finalBillUrl = uploadResult.fileUrl;
-            } else {
-                throw new Error('Failed to upload bill image: ' + (uploadResult?.error || 'Unknown error'));
-            }
-        }
-        const txId = editId || document.getElementById('txId').value;
-        const rowData = [txId, title, mode, finalBillUrl, txDate, txTime];
-        const result = await api.addRow('transaction_master', rowData);
-        if (result && (result.success || result.message?.includes('Success'))) {
-            showToast(editId ? 'Transaction updated!' : 'Transaction added!', 'success');
-            closeTxModal();
-            await loadAdminTxList();
-            await loadAdminUsersWithTx();
-        } else {
-            throw new Error(result?.error || 'Failed to save');
-        }
-    } catch (e) {
-        err.textContent = 'Error: ' + e.message;
-        err.classList.remove('hidden');
-        console.error(e);
-    } finally {
-        btn.innerHTML = orig;
-        btn.disabled = false;
-    }
-});
-
-// ================================================================
-// Admin: User Transaction Status Modal
-// ================================================================
-let utsContext = { username: '', txId: '' };
-
-async function openUserTxStatusModal(username, fullName, txId, txTitle) {
-    utsContext.username = username;
-    utsContext.txId = txId;
-    document.getElementById('utsUsername').value = username;
-    document.getElementById('utsTxId').value = txId;
-    document.getElementById('utsUserDisplay').textContent = fullName || username;
-    document.getElementById('utsTxDisplay').textContent = `${txId} - ${txTitle || 'Untitled'}`;
-    document.getElementById('utsFormError').classList.add('hidden');
-    document.getElementById('utsStatus').value = '';
-    document.getElementById('utsRupees').value = '';
-    try {
-        const userTx = await getUserTransactionSheet(username);
-        const existing = userTx.find(t => t.transaction_id === txId);
-        if (existing) {
-            document.getElementById('utsStatus').value = existing.status || '';
-            document.getElementById('utsRupees').value = existing.rupees || '';
-            document.getElementById('utsDate').value = existing.update_date || new Date().toISOString().split('T')[0];
-            document.getElementById('utsTime').value = existing.update_time || new Date().toTimeString().slice(0, 5);
-        } else {
-            const now = new Date();
-            document.getElementById('utsDate').value = now.toISOString().split('T')[0];
-            document.getElementById('utsTime').value = now.toTimeString().slice(0, 5);
-        }
-    } catch (e) { console.error(e); }
-    document.getElementById('userTxStatusModal').classList.remove('hidden');
-}
-
-function closeUserTxStatusModal() {
-    document.getElementById('userTxStatusModal').classList.add('hidden');
-}
-
-document.getElementById('userTxStatusForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const err = document.getElementById('utsFormError');
-    err.classList.add('hidden');
-    const username = document.getElementById('utsUsername').value;
-    const txId = document.getElementById('utsTxId').value;
-    const status = document.getElementById('utsStatus').value;
-    const rupees = document.getElementById('utsRupees').value.trim();
-    const updateDate = document.getElementById('utsDate').value;
-    const updateTime = document.getElementById('utsTime').value;
-    if (!username || !txId || !status || !updateDate || !updateTime) {
-        err.textContent = 'Please fill all required fields.';
-        err.classList.remove('hidden');
-        return;
-    }
-    if ((status === 'completed' || status === 'no') && (!rupees || isNaN(parseFloat(rupees)))) {
-        err.textContent = 'Please enter a valid Rupees amount for this status.';
-        err.classList.remove('hidden');
-        return;
-    }
-    const btn = document.getElementById('utsSubmitBtn');
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
-    btn.disabled = true;
-    try {
-        const rowData = [txId, status, rupees || '', updateDate, updateTime];
-        const result = await api.addRow(`${username}_transaction`, rowData);
-        if (result && (result.success || result.message?.includes('Success'))) {
-            showToast('Status updated for ' + username, 'success');
-            closeUserTxStatusModal();
-            await loadAdminUsersWithTx();
-        } else {
-            throw new Error(result?.error || 'Failed to update');
-        }
-    } catch (e) {
-        err.textContent = 'Error: ' + e.message;
-        err.classList.remove('hidden');
-        console.error(e);
-    } finally {
-        btn.innerHTML = orig;
-        btn.disabled = false;
-    }
-});
-
-// ================================================================
-// User: Load Transactions
-// ================================================================
-async function loadUserTransactions() {
-    const container = document.getElementById('userTransactionCards');
-    try {
-        const [transactions, userTx] = await Promise.all([
-            getTransactionMaster(),
-            getUserTransactionSheet(currentUser.username)
-        ]);
-        if (!transactions.length) {
-            container.innerHTML =
-                `<div class="text-center py-8 text-gray-500"><i class="fas fa-inbox text-4xl mb-3"></i><p>No transactions available.</p></div>`;
-            return;
-        }
-        const txMap = {};
-        userTx.forEach(ut => { txMap[ut.transaction_id] = ut; });
-        transactions.sort((a, b) => {
-            const da = a.transaction_date || '';
-            const db = b.transaction_date || '';
-            if (da !== db) return da < db ? 1 : -1;
-            return (a.transaction_time || '') < (b.transaction_time || '') ? 1 : -1;
-        });
-        let html = `<div class="space-y-3">`;
-        transactions.forEach(tx => {
-            const status = txMap[tx.transaction_id];
-            const statusLabel = status ? status.status || 'pending' : 'pending';
-            const badgeClass = statusLabel === 'completed' ? 'badge-completed' : statusLabel === 'no' ?
-                'badge-no' : statusLabel === 'to get' ? 'badge-get' : statusLabel === 'to give' ?
-                'badge-give' : 'badge-pending';
-            const rupees = status && status.rupees ? status.rupees : '-';
-            const mode = tx.mode || '';
-            const modeBadge = mode === 'to get' ? 'badge-get' : 'badge-give';
-            const dateStr = tx.transaction_date ? formatDate(tx.transaction_date) : 'N/A';
-            const timeStr = tx.transaction_time || '';
-            const hasBill = tx.bill_url && tx.bill_url.trim() !== '';
-            const updateDate = status && status.update_date ? formatDate(status.update_date) : '-';
-            const updateTime = status && status.update_time ? status.update_time : '-';
-            html += `
-                        <div class="tx-card">
-                            <div class="tx-card-header" onclick="toggleTxCard(this)">
-                                <div class="flex items-center gap-3 min-w-0 flex-1">
-                                    <span class="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">${tx.transaction_id || 'N/A'}</span>
-                                    <span class="tx-title truncate">${tx.title || 'Untitled'}</span>
-                                    <span class="tx-badge ${modeBadge}">${mode || 'N/A'}</span>
-                                </div>
-                                <div class="flex items-center gap-2 flex-shrink-0">
-                                    <span class="badge ${badgeClass}">${statusLabel}</span>
-                                    ${rupees !== '-' ? `<span class="text-sm font-medium">₹${rupees}</span>` : ''}
-                                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
-                                </div>
-                            </div>
-                            <div class="tx-card-body">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                    <div><span class="font-medium">ID:</span> ${tx.transaction_id}</div>
-                                    <div><span class="font-medium">Title:</span> ${tx.title || '-'}</div>
-                                    <div><span class="font-medium">Mode:</span> <span class="badge ${modeBadge}">${mode || '-'}</span></div>
-                                    <div><span class="font-medium">Transaction Date:</span> ${dateStr} ${timeStr}</div>
-                                    <div><span class="font-medium">Your Status:</span> <span class="badge ${badgeClass}">${statusLabel}</span></div>
-                                    <div><span class="font-medium">Rupees:</span> ${rupees !== '-' ? `₹${rupees}` : '-'}</div>
-                                    <div><span class="font-medium">Last Updated:</span> ${updateDate} ${updateTime}</div>
-                                    <div>
-                                        <span class="font-medium">Bill:</span>
-                                        ${hasBill ? `<a href="${tx.bill_url}" target="_blank" class="bill-link"><i class="fas fa-image mr-1"></i>View Bill</a>` : '<span class="text-gray-400">No bill</span>'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = `<p class="text-red-500 text-center">Error loading transactions</p>`;
-    }
-}
-
-// ================================================================
-// Admin: All Users Page (standalone)
-// ================================================================
-async function loadAllUsersAdmin() {
-    const container = document.getElementById('adminUsersList');
-    try {
-        const users = await getAllUsers();
-        const filtered = users.filter(u => u.role === 'user' || u.role === 'student');
-        if (!filtered.length) {
-            container.innerHTML =
-                `<div class="text-center py-8 text-gray-500"><i class="fas fa-users text-4xl mb-3"></i><p>No users found.</p></div>`;
-            return;
-        }
-        let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
-        for (const user of filtered) {
-            const userTx = await getUserTransactionSheet(user.username);
-            const txCount = userTx.length;
-            const completed = userTx.filter(t => t.status === 'completed').length;
-            html += `
-                        <div class="card">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="avatar">${(user.full_name || user.username).substring(0,2).toUpperCase()}</div>
-                                <div>
-                                    <div class="font-bold text-gray-800">${user.full_name || user.username}</div>
-                                    <div class="text-sm text-gray-500">@${user.username}</div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 text-center text-sm">
-                                <div><span class="font-bold text-blue-600">${txCount}</span><br><span class="text-gray-500">Total</span></div>
-                                <div><span class="font-bold text-green-600">${completed}</span><br><span class="text-gray-500">Completed</span></div>
-                                <div><span class="font-bold text-gray-600">${txCount - completed}</span><br><span class="text-gray-500">Pending</span></div>
-                            </div>
-                        </div>
-                    `;
-        }
-        html += `</div>`;
-        container.innerHTML = html;
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = `<p class="text-red-500 text-center">Error loading users</p>`;
-    }
-}
-
-// ================================================================
-// Data Fetching Helpers
-// ================================================================
-async function getTransactionMaster() {
-    const data = await api.getSheet('transaction_master');
-    return (data && Array.isArray(data)) ? data : [];
-}
-
-async function getUserTransactionSheet(username) {
-    const data = await api.getSheet(`${username}_transaction`);
-    return (data && Array.isArray(data)) ? data : [];
-}
-
-async function getAllUsers() {
-    const data = await api.getSheet('user_credentials');
-    return (data && Array.isArray(data)) ? data : [];
-}
-
-// ================================================================
-// Change Password (already defined inline, but keep for completeness)
-// ================================================================
-function openChangePasswordModal() {
-    document.getElementById('profileMenu').classList.add('hidden');
-    document.getElementById('changePasswordModal').classList.remove('hidden');
-    document.getElementById('changePasswordForm').reset();
-    document.getElementById('cpError').classList.add('hidden');
-    document.getElementById('cpSuccess').classList.add('hidden');
-}
-
-function closeChangePasswordModal() { document.getElementById('changePasswordModal').classList.add('hidden'); }
-
-document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const cur = document.getElementById('currentPassword').value.trim();
-    const nw = document.getElementById('newPassword').value.trim();
-    const cf = document.getElementById('confirmPassword').value.trim();
-    const err = document.getElementById('cpError');
-    const suc = document.getElementById('cpSuccess');
-    err.classList.add('hidden');
-    suc.classList.add('hidden');
-    if (!cur || !nw || !cf) { err.textContent = 'Fill all fields';
-        err.classList.remove('hidden'); return; }
-    if (nw.length < 6) { err.textContent = 'New password min 6 chars';
-        err.classList.remove('hidden'); return; }
-    if (nw !== cf) { err.textContent = 'Passwords do not match';
-        err.classList.remove('hidden'); return; }
-    if (nw === cur) { err.textContent = 'New password must be different';
-        err.classList.remove('hidden'); return; }
-    const btn = this.querySelector('button[type="submit"]');
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
-    btn.disabled = true;
-    try {
-        const users = await api.getSheet("user_credentials", false);
-        const user = users.find(u => u.username === currentUser.username && u.password === cur);
-        if (!user) { throw new Error('Current password is incorrect'); }
-        const result = await api.updatePassword(currentUser.username, nw);
-        if (result && result.success) {
-            suc.textContent = 'Password changed! Logging out in 3s...';
-            suc.classList.remove('hidden');
-            setTimeout(() => { closeChangePasswordModal();
-                logout(); }, 3000);
-        } else { throw new Error(result?.error || 'Update failed'); }
-    } catch (e) { err.textContent = e.message;
-        err.classList.remove('hidden'); } finally { btn.innerHTML = orig;
-        btn.disabled = false; }
-});
-
-// ================================================================
-// Close modals on overlay click
-// ================================================================
-document.querySelectorAll('.modal-overlay').forEach(m => {
-    m.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
-});
-
-// ================================================================
-// Keyboard shortcuts
-// ================================================================
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
-    }
-});
-
-// ================================================================
-// Prevent context menu & dev tools
-// ================================================================
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'F12') e.preventDefault();
-    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) e.preventDefault();
-    if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) e.preventDefault();
-    if (e.ctrlKey && (e.key === 's' || e.key === 'S')) e.preventDefault();
-});
-
-console.log('📊 Transaction System Loaded');
+console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #059669; font-size: 16px; font-weight: bold;');
