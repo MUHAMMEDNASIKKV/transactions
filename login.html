@@ -24,20 +24,30 @@
         }
 
         :root {
-            --primary-color: #1e40af;
-            --secondary-color: #059669;
-            --accent-color: #f59e0b;
-            --text-dark: #1f2937;
-            --text-light: #6b7280;
-            --bg-light: #f8fafc;
-            --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --primary-color: #6C63FF;
+            --primary-dark: #5A52D5;
+            --secondary-color: #00C9A7;
+            --secondary-dark: #00B896;
+            --accent-color: #FF6B6B;
+            --warning-color: #FFB800;
+            --text-dark: #2D3436;
+            --text-light: #636E72;
+            --bg-light: #F8F9FA;
+            --bg-white: #FFFFFF;
+            --shadow-soft: 0 4px 20px rgba(108, 99, 255, 0.15);
+            --shadow-medium: 0 10px 30px rgba(108, 99, 255, 0.2);
+            --shadow-hover: 0 15px 40px rgba(108, 99, 255, 0.25);
+            --gradient-primary: linear-gradient(135deg, #6C63FF 0%, #5A52D5 100%);
+            --gradient-secondary: linear-gradient(135deg, #00C9A7 0%, #00B896 100%);
+            --gradient-hero: linear-gradient(135deg, #6C63FF 0%, #00C9A7 100%);
+            --border-radius: 16px;
+            --border-radius-sm: 10px;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             line-height: 1.6;
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f5f0 100%);
             min-height: 100vh;
         }
 
@@ -45,11 +55,12 @@
             display: none !important;
         }
 
+        /* Navigation */
         .nav-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.25rem;
             margin: 0 0.25rem;
             border: 2px solid transparent;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             text-decoration: none;
             transition: all 0.3s ease;
             font-weight: 500;
@@ -59,12 +70,27 @@
         }
 
         .nav-btn:hover {
-            background-color: rgba(0, 0, 0, 0.05);
+            background-color: rgba(108, 99, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .nav-btn.active-admin {
+            background: var(--gradient-primary);
+            color: white !important;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-btn.active-user {
+            background: var(--gradient-secondary);
+            color: white !important;
+            border-color: var(--secondary-color);
+            box-shadow: var(--shadow-soft);
         }
 
         @media (max-width: 768px) {
             .nav-btn {
-                padding: 0.375rem 0.75rem;
+                padding: 0.375rem 0.875rem;
                 font-size: 0.75rem;
                 margin: 0 0.125rem;
             }
@@ -105,11 +131,12 @@
             }
         }
 
+        /* Transaction Cards */
         .transaction-card {
-            background: white;
-            border-radius: 12px;
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
             padding: 1rem;
-            border: 2px solid #e5e7eb;
+            border: 2px solid #E8ECF1;
             margin-bottom: 1rem;
             transition: all 0.3s ease;
             cursor: pointer;
@@ -120,8 +147,8 @@
             }
         }
         .transaction-card:hover {
-            border-color: #059669;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--secondary-color);
+            box-shadow: var(--shadow-soft);
             transform: translateY(-2px);
         }
 
@@ -141,7 +168,7 @@
         .transaction-icon {
             width: 2.5rem;
             height: 2.5rem;
-            background: linear-gradient(135deg, #059669, #047857);
+            background: var(--gradient-secondary);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -163,7 +190,7 @@
         .transaction-info h3 {
             font-size: 1rem;
             font-weight: 700;
-            color: #1f2937;
+            color: var(--text-dark);
             margin-bottom: 0.25rem;
         }
         @media (min-width: 768px) {
@@ -172,7 +199,7 @@
             }
         }
         .transaction-info p {
-            color: #6b7280;
+            color: var(--text-light);
             font-size: 0.75rem;
         }
         @media (min-width: 768px) {
@@ -182,41 +209,52 @@
         }
 
         .mode-badge {
-            padding: 0.375rem 0.75rem;
-            border-radius: 1rem;
+            padding: 0.375rem 0.875rem;
+            border-radius: 2rem;
             font-size: 0.75rem;
             font-weight: 600;
             white-space: nowrap;
         }
         @media (min-width: 768px) {
             .mode-badge {
-                padding: 0.5rem 1rem;
+                padding: 0.5rem 1.25rem;
                 font-size: 0.875rem;
             }
         }
         .mode-get {
-            background: #dcfce7;
-            color: #166534;
+            background: #E8F5E9;
+            color: #2E7D32;
         }
         .mode-give {
-            background: #fee2e2;
-            color: #dc2626;
+            background: #FFEBEE;
+            color: #C62828;
         }
         .mode-completed {
-            background: #dbeafe;
-            color: #1e40af;
+            background: #E3F2FD;
+            color: #1565C0;
         }
         .mode-no {
-            background: #fef3c7;
-            color: #92400e;
+            background: #FFF3E0;
+            color: #E65100;
         }
-        .mode-pending {
-            background: #f3f4f6;
-            color: #6b7280;
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .status-badge.pending {
+            background: #FFF8E1;
+            color: #F57F17;
+        }
+        .status-badge.completed {
+            background: #E8F5E9;
+            color: #2E7D32;
         }
 
         .expand-arrow {
-            color: #6b7280;
+            color: var(--text-light);
             transition: transform 0.3s ease;
             font-size: 0.875rem;
             margin-left: 0.5rem;
@@ -243,12 +281,24 @@
         }
         .details-container.expanded {
             display: block;
+            animation: fadeSlide 0.3s ease-out;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .detail-item {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
+            background: #F8F9FA;
+            border: 1px solid #E8ECF1;
+            border-radius: var(--border-radius-sm);
             padding: 0.75rem;
             margin-bottom: 0.75rem;
         }
@@ -261,16 +311,16 @@
 
         .detail-label {
             font-weight: 600;
-            color: #374151;
+            color: var(--text-dark);
             font-size: 0.875rem;
         }
         .detail-value {
-            color: #6b7280;
+            color: var(--text-light);
             font-size: 0.875rem;
         }
 
         .bill-link {
-            color: #2563eb;
+            color: var(--primary-color);
             text-decoration: none;
             font-weight: 500;
         }
@@ -278,12 +328,13 @@
             text-decoration: underline;
         }
 
+        /* Admin Filter */
         .admin-filter-section {
-            background: white;
-            border-radius: 12px;
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
             padding: 1rem;
             margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-soft);
         }
         @media (min-width: 768px) {
             .admin-filter-section {
@@ -310,24 +361,25 @@
         }
         .filter-label {
             font-weight: 600;
-            color: #374151;
+            color: var(--text-dark);
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
         }
         .filter-select {
             padding: 0.75rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 0.5rem;
+            border: 2px solid #E8ECF1;
+            border-radius: var(--border-radius-sm);
             font-size: 0.875rem;
             transition: border-color 0.2s ease;
             background: white;
         }
         .filter-select:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
         }
 
+        /* Users Grid */
         .users-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -340,25 +392,25 @@
         }
         @media (min-width: 1024px) {
             .users-grid {
-                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             }
         }
 
         .user-card {
-            background: white;
-            border-radius: 12px;
-            border: 2px solid #e5e7eb;
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            border: 2px solid #E8ECF1;
             transition: all 0.3s ease;
             cursor: pointer;
             overflow: hidden;
         }
         .user-card:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
         }
         .user-card.expanded {
-            border-color: #3b82f6;
-            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-medium);
         }
         .user-card-inner {
             padding: 1rem;
@@ -370,29 +422,29 @@
             }
         }
         .user-avatar {
-            width: 2.5rem;
-            height: 2.5rem;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            width: 3rem;
+            height: 3rem;
+            background: var(--gradient-primary);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.125rem;
             margin: 0 auto 0.75rem auto;
         }
         @media (min-width: 768px) {
             .user-avatar {
-                width: 3rem;
-                height: 3rem;
+                width: 3.5rem;
+                height: 3.5rem;
                 font-size: 1.25rem;
                 margin-bottom: 1rem;
             }
         }
         .user-name {
             font-weight: 700;
-            color: #1f2937;
+            color: var(--text-dark);
             margin-bottom: 0.25rem;
             font-size: 0.875rem;
         }
@@ -402,7 +454,7 @@
             }
         }
         .user-username {
-            color: #6b7280;
+            color: var(--text-light);
             font-size: 0.75rem;
             margin-bottom: 0.5rem;
         }
@@ -412,36 +464,27 @@
             }
         }
         .user-expand-content {
-            border-top: 2px solid #e5e7eb;
-            background: #f8fafc;
+            border-top: 2px solid #E8ECF1;
+            background: #F8F9FA;
             display: none;
             padding: 0 1rem 1rem 1rem;
         }
         .user-expand-content.open {
             display: block;
-            animation: expandSlide 0.3s ease-out;
-        }
-        @keyframes expandSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            animation: fadeSlide 0.3s ease-out;
         }
 
         .expand-toggle-icon {
             transition: transform 0.3s ease;
             display: inline-block;
             font-size: 0.8rem;
-            color: #6b7280;
+            color: var(--text-light);
         }
         .expand-toggle-icon.rotated {
             transform: rotate(180deg);
         }
 
+        /* Modals */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -449,6 +492,7 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -456,12 +500,13 @@
             padding: 1rem;
         }
         .modal-content {
-            background: white;
-            border-radius: 1rem;
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
             max-width: 600px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: var(--shadow-medium);
         }
         @media (max-width: 768px) {
             .modal-content {
@@ -470,12 +515,93 @@
             }
         }
 
+        /* Buttons */
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-secondary {
+            background: var(--gradient-secondary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-success {
+            background: var(--gradient-secondary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-dark);
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #E8ECF1;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .btn-outline:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
         .submit-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: var(--gradient-primary);
             color: white;
             padding: 1rem 1.5rem;
             border: none;
-            border-radius: 0.75rem;
+            border-radius: var(--border-radius-sm);
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -491,22 +617,22 @@
                 font-size: 0.9rem;
                 min-height: 35px;
                 margin-top: 1.5rem;
-                border-radius: 0.75rem;
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                border-radius: var(--border-radius-sm);
+                box-shadow: var(--shadow-soft);
             }
         }
         .submit-btn:hover {
-            background: linear-gradient(135deg, #059669, #047857);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
         }
         .submit-btn:disabled {
-            background: #9ca3af;
+            background: #B0BEC5;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
 
+        /* Login */
         .login-container {
             padding: 1rem;
             width: 100%;
@@ -519,6 +645,41 @@
             }
         }
 
+        .login-card {
+            background: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-medium);
+            padding: 2rem;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header .logo-icon {
+            width: 4rem;
+            height: 4rem;
+            background: var(--gradient-hero);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+        .login-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        .login-header p {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Profile */
         .profile-pic-container {
             position: relative;
             width: 2.5rem;
@@ -537,20 +698,6 @@
             object-fit: cover;
             border: 2px solid rgba(255, 255, 255, 0.3);
             transition: all 0.3s ease;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: crisp-edges;
-            image-rendering: pixelated;
-            transform: translateZ(0);
-            -webkit-font-smoothing: antialiased;
-            will-change: transform;
-        }
-        @media (-webkit-min-device-pixel-ratio: 2),
-        (min-resolution: 192dpi) {
-            .profile-pic {
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
-            }
         }
         .profile-pic:hover {
             border-color: rgba(255, 255, 255, 0.6);
@@ -568,11 +715,6 @@
             font-size: 1rem;
             border: 2px solid rgba(255, 255, 255, 0.3);
         }
-        @media (min-width: 768px) {
-            .profile-pic-fallback {
-                font-size: 1.2rem;
-            }
-        }
 
         .profile-menu {
             position: absolute;
@@ -582,40 +724,30 @@
             min-width: 200px;
         }
         .profile-menu-content {
-            background: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            border: 1px solid #e5e7eb;
+            background: var(--bg-white);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-medium);
+            border: 1px solid #E8ECF1;
             overflow: hidden;
-            animation: profileMenuSlide 0.2s ease-out;
-        }
-        @keyframes profileMenuSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            animation: fadeSlide 0.2s ease-out;
         }
         .profile-info {
             padding: 1rem;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: linear-gradient(135deg, #F8F9FA 0%, #E8ECF1 100%);
         }
         .profile-name {
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-dark);
             font-size: 0.875rem;
             margin-bottom: 0.25rem;
         }
         .profile-username {
-            color: #6b7280;
+            color: var(--text-light);
             font-size: 0.75rem;
         }
         .profile-menu-divider {
             height: 1px;
-            background-color: #e5e7eb;
+            background-color: #E8ECF1;
         }
         .profile-menu-item {
             width: 100%;
@@ -623,7 +755,7 @@
             text-align: left;
             background: none;
             border: none;
-            color: #374151;
+            color: var(--text-dark);
             font-size: 0.875rem;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -631,22 +763,18 @@
             align-items: center;
         }
         .profile-menu-item:hover {
-            background-color: #f3f4f6;
-            color: #dc2626;
+            background-color: #F8F9FA;
+            color: var(--accent-color);
         }
         .profile-menu-item i {
-            color: #6b7280;
+            color: var(--text-light);
+            width: 1.25rem;
         }
         .profile-menu-item:hover i {
-            color: #dc2626;
-        }
-        @media (max-width: 768px) {
-            .profile-menu {
-                right: -1rem;
-                min-width: 180px;
-            }
+            color: var(--accent-color);
         }
 
+        /* Header */
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -656,8 +784,8 @@
         }
         .header-info {
             display: flex;
-            items-center;
-            space-x: 0.75rem;
+            align-items: center;
+            gap: 0.75rem;
             min-width: 0;
             flex: 1;
         }
@@ -687,13 +815,11 @@
             height: 1rem;
             border: 2px solid #f3f4f6;
             border-radius: 50%;
-            border-top-color: #3b82f6;
+            border-top-color: var(--primary-color);
             animation: spin 1s ease-in-out infinite;
         }
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -707,10 +833,10 @@
         }
 
         .edit-btn {
-            background: #3b82f6;
+            background: var(--gradient-primary);
             color: white;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.375rem;
+            padding: 0.375rem 0.875rem;
+            border-radius: var(--border-radius-sm);
             font-size: 0.75rem;
             font-weight: 500;
             cursor: pointer;
@@ -719,20 +845,21 @@
             white-space: nowrap;
         }
         .edit-btn:hover {
-            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-soft);
         }
 
         .user-transaction-item {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
+            background: var(--bg-white);
+            border: 1px solid #E8ECF1;
+            border-radius: var(--border-radius-sm);
             padding: 0.75rem;
             margin-top: 0.75rem;
             transition: all 0.2s ease;
         }
         .user-transaction-item:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
         }
         .user-transaction-item:first-child {
             margin-top: 0.75rem;
@@ -741,174 +868,165 @@
             margin-bottom: 0;
         }
 
-        .transaction-status-badge {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: 0.25rem;
-            font-weight: 600;
-        }
-        .transaction-status-badge.get {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .transaction-status-badge.give {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-        .transaction-status-badge.completed {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        .transaction-status-badge.no {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        .transaction-status-badge.pending {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-
         .transaction-amount {
             font-weight: 700;
             font-size: 1.1rem;
         }
         .transaction-amount.get {
-            color: #166534;
+            color: #2E7D32;
         }
         .transaction-amount.give {
-            color: #dc2626;
-        }
-        .transaction-amount.completed {
-            color: #1e40af;
-        }
-        .transaction-amount.no {
-            color: #92400e;
-        }
-
-        .admin-action-btn {
-            background: #8b5cf6;
-            color: white;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            white-space: nowrap;
-        }
-        .admin-action-btn:hover {
-            background: #7c3aed;
-        }
-
-        .no-transactions-msg {
-            text-align: center;
-            padding: 2rem 0;
-            color: #9ca3af;
-        }
-        .no-transactions-msg i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        .status-update-select {
-            padding: 0.375rem 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            background: white;
-        }
-        .status-update-select:focus {
-            outline: none;
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+            color: #C62828;
         }
 
         .amount-display {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .badge-pending {
+            background: #FFF8E1;
+            color: #F57F17;
+            padding: 0.2rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            font-size: 0.9rem;
         }
-        .amount-display.get {
-            color: #166534;
+
+        .badge-completed {
+            background: #E8F5E9;
+            color: #2E7D32;
+            padding: 0.2rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
-        .amount-display.give {
-            color: #dc2626;
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: var(--shadow-medium);
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
         }
-        .amount-display.completed {
-            color: #1e40af;
+        .toast-success {
+            background: var(--gradient-secondary);
         }
-        .amount-display.no {
-            color: #92400e;
+        .toast-error {
+            background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+        }
+        .toast-info {
+            background: var(--gradient-primary);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            opacity: 0.7;
+            cursor: pointer;
+            margin-left: 0.75rem;
+            font-size: 1rem;
+        }
+        .toast-close:hover {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
     <!-- Login Page -->
     <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl login-container">
+        <div class="login-card w-full max-w-md">
             <div id="loginSection">
-                <div class="text-center mb-6">
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Transaction Manager</h1>
-                    <p class="text-gray-600 mt-2 text-sm md:text-base">Transaction Management System</p>
+                <div class="login-header">
+                    <div class="logo-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h1>Transaction Manager</h1>
+                    <p>Manage your transactions efficiently</p>
                 </div>
 
                 <form id="loginForm">
-                    <div class="space-y-4 md:space-y-6">
+                    <div class="space-y-4">
                         <div>
-                            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                             <input type="text" id="username" name="username" required
-                            class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300 text-sm md:text-base">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300 text-sm">
                         </div>
 
                         <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                             <input type="password" id="password" name="password" required
-                            class="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300 text-sm md:text-base">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300 text-sm">
                         </div>
 
                         <div id="loginError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"></div>
 
-                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-2 md:py-3 px-4 rounded-lg hover:from-blue-700 hover:to-green-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold transition duration-300 text-sm md:text-base">
+                        <button type="submit" class="submit-btn">
                             <i class="fas fa-sign-in-alt mr-2"></i>Sign In
                         </button>
                     </div>
                 </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-gray-600 text-sm">Don't have an account?
+                        <button onclick="showSignup()" class="text-purple-600 hover:text-purple-800 font-semibold">Register here</button>
+                    </p>
+                </div>
             </div>
 
             <div id="signupSection" class="hidden">
-                <div class="text-center mb-4 md:mb-6">
-                    <div class="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-600 to-green-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                        <i class="fas fa-user-plus text-white text-lg md:text-2xl"></i>
+                <div class="login-header">
+                    <div class="logo-icon">
+                        <i class="fas fa-user-plus"></i>
                     </div>
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Create Account</h1>
-                    <p class="text-gray-600 mt-2 text-sm md:text-base">Register</p>
+                    <h1>Create Account</h1>
+                    <p>Register to get started</p>
                 </div>
 
                 <form id="signupForm">
-                    <div class="space-y-3 md:space-y-4">
+                    <div class="space-y-3">
                         <div>
                             <label for="signupName" class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                             <input type="text" id="signupName" name="signupName" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300 text-sm">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300 text-sm">
                         </div>
 
                         <div>
                             <label for="signupPhone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
                             <input type="tel" id="signupPhone" name="signupPhone" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300 text-sm">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300 text-sm">
                         </div>
 
                         <div>
                             <label for="signupGmail" class="block text-sm font-medium text-gray-700 mb-1">Gmail (Optional)</label>
                             <input type="email" id="signupGmail" name="signupGmail"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300 text-sm">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300 text-sm">
                         </div>
 
                         <div id="signupError" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm"></div>
                         <div id="signupSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm"></div>
 
-                        <button type="submit" class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-2 md:py-3 px-4 rounded-lg hover:from-green-700 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold transition duration-300 text-sm md:text-base">
+                        <button type="submit" class="submit-btn">
                             <i class="fas fa-user-plus mr-2"></i>Create Account
                         </button>
                     </div>
@@ -916,7 +1034,7 @@
 
                 <div class="text-center mt-4">
                     <p class="text-gray-600 text-sm">Already have an account?
-                        <button onclick="showLogin()" class="text-blue-600 hover:text-blue-800 font-semibold">Sign in here</button>
+                        <button onclick="showLogin()" class="text-purple-600 hover:text-purple-800 font-semibold">Sign in here</button>
                     </p>
                 </div>
             </div>
@@ -925,7 +1043,7 @@
 
     <!-- Dashboard Container -->
     <div id="dashboardContainer" class="hidden min-h-screen bg-gray-50">
-        <header class="bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg">
+        <header class="bg-gradient-to-r from-purple-600 to-teal-500 text-white shadow-lg">
             <div class="container mx-auto px-2 md:px-4 py-2 md:py-3">
                 <div class="header-content">
                     <div class="header-info">
@@ -966,10 +1084,10 @@
         <nav id="adminNav" class="bg-white shadow-sm border-b hidden">
             <div class="container mx-auto px-2 md:px-4">
                 <div class="flex space-x-1 overflow-x-auto py-2">
-                    <button onclick="showPage('adminTransactions')" class="nav-btn text-gray-700 hover:text-blue-600 whitespace-nowrap">
+                    <button onclick="showPage('adminTransactions')" class="nav-btn text-gray-700 hover:text-purple-600 whitespace-nowrap">
                         <i class="fas fa-exchange-alt mr-1 md:mr-2"></i>Transactions
                     </button>
-                    <button onclick="showPage('adminUsers')" class="nav-btn text-gray-700 hover:text-blue-600 whitespace-nowrap">
+                    <button onclick="showPage('adminUsers')" class="nav-btn text-gray-700 hover:text-purple-600 whitespace-nowrap">
                         <i class="fas fa-users mr-1 md:mr-2"></i>Users
                     </button>
                 </div>
@@ -979,7 +1097,7 @@
         <nav id="userNav" class="bg-white shadow-sm border-b hidden">
             <div class="container mx-auto px-2 md:px-4">
                 <div class="flex space-x-1 overflow-x-auto py-2">
-                    <button onclick="showPage('userTransactions')" class="nav-btn text-gray-700 hover:text-green-600 whitespace-nowrap">
+                    <button onclick="showPage('userTransactions')" class="nav-btn text-gray-700 hover:text-teal-600 whitespace-nowrap">
                         <i class="fas fa-exchange-alt mr-1 md:mr-2"></i>Transactions
                     </button>
                 </div>
@@ -993,10 +1111,10 @@
                 <div class="bg-white rounded-lg shadow-lg p-3 md:p-6">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 md:mb-6 gap-2">
                         <div>
-                            <h2 class="text-xl md:text-2xl font-bold text-blue-600">Transaction Management</h2>
+                            <h2 class="text-xl md:text-2xl font-bold text-purple-600">Transaction Management</h2>
                             <p class="text-gray-600 text-sm md:text-base">Manage all transactions</p>
                         </div>
-                        <button onclick="openAddTransactionModal()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button onclick="openAddTransactionModal()" class="btn-success">
                             <i class="fas fa-plus mr-2"></i>Add Transaction
                         </button>
                     </div>
@@ -1008,7 +1126,7 @@
             <!-- Admin Users Page -->
             <div id="adminUsersPage" class="page-content hidden">
                 <div class="bg-white rounded-lg shadow-lg p-3 md:p-6">
-                    <h2 class="text-xl md:text-2xl font-bold text-blue-600 mb-4 md:mb-6">All Users</h2>
+                    <h2 class="text-xl md:text-2xl font-bold text-purple-600 mb-4 md:mb-6">All Users</h2>
                     <div id="adminUsersList" class="users-grid"></div>
                 </div>
             </div>
@@ -1016,7 +1134,7 @@
             <!-- User Transactions Page -->
             <div id="userTransactionsPage" class="page-content hidden">
                 <div class="bg-white rounded-lg shadow-lg p-3 md:p-6">
-                    <h2 class="text-xl md:text-2xl font-bold text-green-600 mb-4 md:mb-6">My Transactions</h2>
+                    <h2 class="text-xl md:text-2xl font-bold text-teal-600 mb-4 md:mb-6">My Transactions</h2>
                     <div id="userTransactionsList"></div>
                 </div>
             </div>
@@ -1029,7 +1147,7 @@
         <div class="modal-content">
             <div class="p-4 md:p-6">
                 <div class="flex justify-between items-center mb-3 md:mb-4">
-                    <h3 class="text-lg md:text-xl font-bold text-green-600">Add New Transaction</h3>
+                    <h3 class="text-lg md:text-xl font-bold text-teal-600">Add New Transaction</h3>
                     <button onclick="closeAddTransactionModal()" class="text-gray-500 hover:text-gray-700 p-1">
                         <i class="fas fa-times text-lg md:text-xl"></i>
                     </button>
@@ -1045,13 +1163,13 @@
                         <div>
                             <label for="transactionTitle" class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
                             <input type="text" id="transactionTitle" name="transactionTitle" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-300">
                         </div>
 
                         <div>
                             <label for="transactionMode" class="block text-sm font-medium text-gray-700 mb-2">Mode *</label>
                             <select id="transactionMode" name="transactionMode" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-300">
                                 <option value="">-- Select Mode --</option>
                                 <option value="to get">To Get</option>
                                 <option value="to give">To Give</option>
@@ -1059,23 +1177,22 @@
                         </div>
 
                         <div>
-                            <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount (Rs) *</label>
+                            <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Total Amount (Rs) *</label>
                             <input type="number" id="transactionAmount" name="transactionAmount" required min="0" step="1"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300"
-                            placeholder="Enter amount">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-300">
                         </div>
 
                         <div>
                             <label for="billUpload" class="block text-sm font-medium text-gray-700 mb-2">Upload Bill Image</label>
                             <input type="file" id="billUpload" name="billUpload" accept="image/*"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-300">
                             <p class="text-xs text-gray-500 mt-1">Supported formats: JPG, PNG, GIF (Max 5MB)</p>
                         </div>
 
                         <div>
                             <label for="transactionDate" class="block text-sm font-medium text-gray-700 mb-2">Date & Time *</label>
                             <input type="datetime-local" id="transactionDate" name="transactionDate" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-300">
                         </div>
                     </div>
 
@@ -1083,10 +1200,10 @@
                     <div id="addTransactionSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
 
                     <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
-                        <button type="button" onclick="closeAddTransactionModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="button" onclick="closeAddTransactionModal()" class="btn-outline">
                             Cancel
                         </button>
-                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="submit" class="btn-success">
                             <i class="fas fa-plus mr-2"></i>Add Transaction
                         </button>
                     </div>
@@ -1095,12 +1212,12 @@
         </div>
     </div>
 
-    <!-- Edit Transaction Modal (Admin Only) -->
+    <!-- Edit Transaction Modal (Admin) -->
     <div id="editTransactionModal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="p-4 md:p-6">
                 <div class="flex justify-between items-center mb-3 md:mb-4">
-                    <h3 class="text-lg md:text-xl font-bold text-blue-600">Edit Transaction</h3>
+                    <h3 class="text-lg md:text-xl font-bold text-purple-600">Edit Transaction</h3>
                     <button onclick="closeEditTransactionModal()" class="text-gray-500 hover:text-gray-700 p-1">
                         <i class="fas fa-times text-lg md:text-xl"></i>
                     </button>
@@ -1116,13 +1233,13 @@
                         <div>
                             <label for="editTransactionTitle" class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
                             <input type="text" id="editTransactionTitle" name="editTransactionTitle" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                         </div>
 
                         <div>
                             <label for="editTransactionMode" class="block text-sm font-medium text-gray-700 mb-2">Mode *</label>
                             <select id="editTransactionMode" name="editTransactionMode" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                                 <option value="">-- Select Mode --</option>
                                 <option value="to get">To Get</option>
                                 <option value="to give">To Give</option>
@@ -1130,15 +1247,15 @@
                         </div>
 
                         <div>
-                            <label for="editTransactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount (Rs) *</label>
+                            <label for="editTransactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Total Amount (Rs) *</label>
                             <input type="number" id="editTransactionAmount" name="editTransactionAmount" required min="0" step="1"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                         </div>
 
                         <div>
                             <label for="editBillUpload" class="block text-sm font-medium text-gray-700 mb-2">Upload Bill Image (Optional)</label>
                             <input type="file" id="editBillUpload" name="editBillUpload" accept="image/*"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                             <p class="text-xs text-gray-500 mt-1">Leave empty to keep existing bill</p>
                             <div id="editCurrentBill" class="mt-2"></div>
                         </div>
@@ -1146,7 +1263,7 @@
                         <div>
                             <label for="editTransactionDate" class="block text-sm font-medium text-gray-700 mb-2">Date & Time *</label>
                             <input type="datetime-local" id="editTransactionDate" name="editTransactionDate" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                         </div>
                     </div>
 
@@ -1154,10 +1271,10 @@
                     <div id="editTransactionSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
 
                     <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
-                        <button type="button" onclick="closeEditTransactionModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="button" onclick="closeEditTransactionModal()" class="btn-outline">
                             Cancel
                         </button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="submit" class="btn-primary">
                             <i class="fas fa-save mr-2"></i>Update Transaction
                         </button>
                     </div>
@@ -1166,64 +1283,59 @@
         </div>
     </div>
 
-    <!-- Admin Update User Transaction Modal -->
-    <div id="adminUpdateUserModal" class="modal-overlay hidden">
+    <!-- User Transaction Action Modal (Admin viewing user) -->
+    <div id="userActionModal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="p-4 md:p-6">
                 <div class="flex justify-between items-center mb-3 md:mb-4">
                     <h3 class="text-lg md:text-xl font-bold text-purple-600">Update User Transaction</h3>
-                    <button onclick="closeAdminUpdateUserModal()" class="text-gray-500 hover:text-gray-700 p-1">
+                    <button onclick="closeUserActionModal()" class="text-gray-500 hover:text-gray-700 p-1">
                         <i class="fas fa-times text-lg md:text-xl"></i>
                     </button>
                 </div>
 
-                <form id="adminUpdateUserForm">
+                <form id="userActionForm">
                     <div class="space-y-4 mb-4 md:mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
-                            <input type="text" id="adminUpdateUsername" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" readonly>
-                        </div>
-
-                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Transaction</label>
-                            <input type="text" id="adminUpdateTransactionTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" readonly>
+                            <input type="text" id="userActionTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" readonly>
                         </div>
-                        <input type="hidden" id="adminUpdateTransactionId">
+                        <input type="hidden" id="userActionTransactionId">
+                        <input type="hidden" id="userActionUsername">
 
                         <div>
-                            <label for="adminUpdateStatus" class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
-                            <select id="adminUpdateStatus" name="adminUpdateStatus" required
+                            <label for="userActionStatus" class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                            <select id="userActionStatus" name="userActionStatus" required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                                 <option value="">-- Select Status --</option>
-                                <option value="to get">To Get</option>
-                                <option value="to give">To Give</option>
+                                <option value="pending">Pending</option>
                                 <option value="completed">Completed</option>
-                                <option value="no">No</option>
                             </select>
                         </div>
 
                         <div>
-                            <label for="adminUpdateAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount (Rs) *</label>
-                            <input type="number" id="adminUpdateAmount" name="adminUpdateAmount" required min="0" step="1"
+                            <label for="userActionAmount" class="block text-sm font-medium text-gray-700 mb-2">Amount Paid (Rs) *</label>
+                            <input type="number" id="userActionAmount" name="userActionAmount" required min="0" step="1"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
+                            <p class="text-xs text-gray-500 mt-1">Enter the amount this user has paid</p>
                         </div>
 
                         <div>
-                            <label for="adminUpdateDate" class="block text-sm font-medium text-gray-700 mb-2">Date & Time *</label>
-                            <input type="datetime-local" id="adminUpdateDate" name="adminUpdateDate" required
+                            <label for="userActionDate" class="block text-sm font-medium text-gray-700 mb-2">Date & Time *</label>
+                            <input type="datetime-local" id="userActionDate" name="userActionDate" required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                         </div>
                     </div>
 
-                    <div id="adminUpdateError" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
-                    <div id="adminUpdateSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
+                    <div id="userActionError" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
+                    <div id="userActionSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
 
                     <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
-                        <button type="button" onclick="closeAdminUpdateUserModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="button" onclick="closeUserActionModal()" class="btn-outline">
                             Cancel
                         </button>
-                        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
-                            <i class="fas fa-save mr-2"></i>Update Status
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-check mr-2"></i>Update
                         </button>
                     </div>
                 </form>
@@ -1236,7 +1348,7 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="p-4 md:p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg md:text-xl font-bold text-blue-600">Change Password</h3>
+                    <h3 class="text-lg md:text-xl font-bold text-purple-600">Change Password</h3>
                     <button onclick="closeChangePasswordModal()" class="text-gray-500 hover:text-gray-700 p-1">
                         <i class="fas fa-times text-lg md:text-xl"></i>
                     </button>
@@ -1247,20 +1359,20 @@
                         <div>
                             <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">Current Password *</label>
                             <input type="password" id="currentPassword" name="currentPassword" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                         </div>
 
                         <div>
                             <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
                             <input type="password" id="newPassword" name="newPassword" required minlength="6"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300"
                             placeholder="Minimum 6 characters">
                         </div>
 
                         <div>
                             <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password *</label>
                             <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-300">
                         </div>
                     </div>
 
@@ -1268,10 +1380,10 @@
                     <div id="changePasswordSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg text-sm mb-4"></div>
 
                     <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
-                        <button type="button" onclick="closeChangePasswordModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="button" onclick="closeChangePasswordModal()" class="btn-outline">
                             Cancel
                         </button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        <button type="submit" class="btn-primary">
                             <i class="fas fa-key mr-2"></i>Change Password
                         </button>
                     </div>
@@ -1350,7 +1462,25 @@
             }
         });
 
-        // ---- Login persistence: restore session on load ----
+        // ---- Toast notification ----
+        function showToast(message, type = 'info', duration = 4000) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, duration);
+        }
+
+        // ---- Login persistence ----
         (function restoreSession() {
             const saved = sessionStorage.getItem('transaction_session');
             if (saved) {
@@ -1547,35 +1677,6 @@
             }
         }
 
-        function showNotification(message, type = 'info', duration = 5000) {
-            const notification = document.createElement('div');
-            const colors = {
-                success: { bg: 'bg-green-500', icon: 'fas fa-check-circle' },
-                error: { bg: 'bg-red-500', icon: 'fas fa-exclamation-circle' },
-                warning: { bg: 'bg-yellow-500', icon: 'fas fa-exclamation-triangle' },
-                info: { bg: 'bg-blue-500', icon: 'fas fa-info-circle' }
-            };
-
-            const { bg: bgColor, icon } = colors[type] || colors.info;
-
-            notification.className = `fixed top-20 right-4 ${bgColor} text-white p-4 rounded-lg shadow-lg z-50 max-w-sm`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="${icon} mr-2"></i>
-                    <span class="flex-1">${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                if (notification.parentElement) notification.remove();
-            }, duration);
-        }
-
         async function preloadCriticalData() {
             if (currentUser) {
                 const criticalSheets = ['user_credentials', 'transaction_master'];
@@ -1587,7 +1688,7 @@
             if (currentUser) preloadCriticalData();
         }, 2 * 60 * 1000);
 
-        console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #059669; font-size: 16px; font-weight: bold;');
+        console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #6C63FF; font-size: 16px; font-weight: bold;');
     </script>
 </body>
 </html>
