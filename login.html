@@ -24,573 +24,484 @@
         }
 
         :root {
-            --primary: #4F46E5;
-            --primary-dark: #4338CA;
-            --secondary: #7C3AED;
-            --success: #059669;
-            --danger: #DC2626;
-            --warning: #D97706;
-            --bg-dark: #0F172A;
-            --bg-light: #F8FAFC;
-            --card-bg: #FFFFFF;
-            --text-primary: #0F172A;
-            --text-secondary: #64748B;
-            --border-color: #E2E8F0;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
-            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
-            --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
-            --radius: 16px;
-            --radius-sm: 10px;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #06b6d4;
+            --accent: #8b5cf6;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --gray: #64748b;
+            --light: #f1f5f9;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #EDE9FE 100%);
+            line-height: 1.6;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f5f3ff 100%);
             min-height: 100vh;
-            color: var(--text-primary);
         }
 
-        .hidden { display: none !important; }
-
-        /* ===== SCROLLBAR ===== */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
-
-        /* ===== GLASS CARD ===== */
-        .glass-card {
-            background: rgba(255,255,255,0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.5);
-            box-shadow: var(--shadow-md);
-            border-radius: var(--radius);
+        .hidden {
+            display: none !important;
         }
 
-        .glass-card-dark {
-            background: rgba(15,23,42,0.9);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-
-        /* ===== LOGIN ===== */
-        .login-wrapper {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 440px;
-            padding: 2.5rem 2rem;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: var(--radius);
-            border: 1px solid rgba(255,255,255,0.5);
-            box-shadow: var(--shadow-xl);
-        }
-
-        .login-logo {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.25rem;
-            font-size: 28px;
-            color: white;
-            box-shadow: 0 8px 24px rgba(79,70,229,0.3);
-        }
-
-        .login-title {
-            font-size: 1.75rem;
-            font-weight: 800;
-            text-align: center;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .login-subtitle {
-            text-align: center;
-            color: var(--text-secondary);
+        .nav-btn {
+            padding: 0.5rem 1.25rem;
+            margin: 0 0.25rem;
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
             font-size: 0.875rem;
-            margin-top: 0.25rem;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 1.25rem;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.375rem;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-size: 0.95rem;
-            transition: all 0.25s ease;
-            background: white;
-            color: var(--text-primary);
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79,70,229,0.1);
-        }
-
-        .input-group input:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 0.875rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 1rem;
+            white-space: nowrap;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(79,70,229,0.35);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-secondary {
-            width: 100%;
-            padding: 0.75rem;
+            color: var(--gray);
             background: transparent;
-            color: var(--primary);
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .btn-secondary:hover {
+        .nav-btn:hover {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        .nav-btn.active-admin {
+            background: var(--primary);
+            color: white;
             border-color: var(--primary);
-            background: rgba(79,70,229,0.05);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
-        .btn-danger {
-            padding: 0.5rem 1rem;
-            background: var(--danger);
+        .nav-btn.active-user {
+            background: var(--secondary);
             color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.25s ease;
+            border-color: var(--secondary);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
         }
 
-        .btn-danger:hover {
-            background: #B91C1C;
-            transform: translateY(-1px);
+        @media (max-width: 768px) {
+            .nav-btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+                margin: 0 0.125rem;
+            }
+            nav .container {
+                padding: 0 0.75rem;
+            }
+            nav .flex {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                gap: 0.25rem;
+            }
+            nav .flex::-webkit-scrollbar {
+                display: none;
+            }
         }
 
-        .btn-success {
-            padding: 0.5rem 1rem;
-            background: var(--success);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.25s ease;
+        .page-content {
+            padding: 1rem 0;
+        }
+        @media (min-width: 768px) {
+            .page-content {
+                padding: 2rem 0;
+            }
         }
 
-        .btn-success:hover {
-            background: #047857;
-            transform: translateY(-1px);
+        .main-container {
+            padding: 0.5rem;
+        }
+        @media (min-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+        }
+        @media (min-width: 1024px) {
+            .main-container {
+                padding: 1.5rem;
+            }
         }
 
-        .btn-warning {
-            padding: 0.5rem 1rem;
-            background: var(--warning);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.25s ease;
-        }
-
-        .btn-warning:hover {
-            background: #B45309;
-            transform: translateY(-1px);
-        }
-
-        .btn-outline {
-            padding: 0.5rem 1rem;
-            background: transparent;
-            color: var(--text-secondary);
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-weight: 500;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.25s ease;
-        }
-
-        .btn-outline:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        /* ===== HEADER ===== */
-        .app-header {
-            background: rgba(15,23,42,0.95);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
-        .app-header .container {
-            padding: 0.75rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            color: white;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .header-brand .brand-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: white;
-        }
-
-        .header-user {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            position: relative;
-        }
-
-        .header-user .user-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255,255,255,0.15);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .header-user .user-avatar:hover {
-            border-color: var(--primary);
-            transform: scale(1.05);
-        }
-
-        .header-user .user-name {
-            color: white;
-            font-weight: 500;
-            font-size: 0.85rem;
-        }
-
-        /* ===== NAV ===== */
-        .app-nav {
+        .transaction-card {
             background: white;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 1.5rem;
-            display: flex;
-            gap: 0.25rem;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .app-nav::-webkit-scrollbar { display: none; }
-
-        .nav-tab {
-            padding: 0.75rem 1.25rem;
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            border: none;
-            background: none;
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            transition: all 0.25s ease;
-            border-bottom: 3px solid transparent;
-            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
-
-        .nav-tab:hover { color: var(--text-primary); }
-        .nav-tab.active { 
-            color: var(--primary); 
-            border-bottom-color: var(--primary);
+        @media (min-width: 768px) {
+            .transaction-card {
+                padding: 1.5rem;
+            }
         }
-
-        .nav-tab i { margin-right: 0.5rem; }
-
-        /* ===== MAIN CONTENT ===== */
-        .main-content {
-            padding: 1.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* ===== CARDS ===== */
-        .stat-card {
-            background: white;
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
+        .transaction-card:hover {
             border-color: var(--primary);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.12);
             transform: translateY(-2px);
         }
 
-        .stat-card .stat-icon {
-            width: 48px;
-            height: 48px;
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        @media (min-width: 768px) {
+            .transaction-header {
+                padding: 0.75rem;
+            }
+        }
+
+        .transaction-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            margin-bottom: 0.75rem;
-        }
-
-        .stat-card .stat-number {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .stat-card .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        /* ===== TRANSACTION CARD ===== */
-        .tx-card {
-            background: white;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            padding: 1rem 1.25rem;
-            margin-bottom: 0.75rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .tx-card:hover {
-            border-color: var(--primary);
-            box-shadow: var(--shadow-sm);
-            transform: translateY(-1px);
-        }
-
-        .tx-card .tx-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .tx-card .tx-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-width: 0;
-            flex: 1;
-        }
-
-        .tx-card .tx-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
+            color: white;
+            font-size: 1rem;
+            margin-right: 0.75rem;
             flex-shrink: 0;
         }
-
-        .tx-icon.get { background: #D1FAE5; color: #065F46; }
-        .tx-icon.give { background: #FEE2E2; color: #991B1B; }
-        .tx-icon.completed { background: #DBEAFE; color: #1E40AF; }
-
-        .tx-card .tx-info { min-width: 0; flex: 1; }
-        .tx-card .tx-title { font-weight: 600; font-size: 0.95rem; }
-        .tx-card .tx-meta { font-size: 0.75rem; color: var(--text-secondary); }
-
-        .tx-card .tx-right {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-shrink: 0;
+        @media (min-width: 768px) {
+            .transaction-icon {
+                width: 3rem;
+                height: 3rem;
+                font-size: 1.2rem;
+                margin-right: 1rem;
+            }
         }
 
-        .badge {
+        .transaction-info h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+        @media (min-width: 768px) {
+            .transaction-info h3 {
+                font-size: 1.125rem;
+            }
+        }
+        .transaction-info p {
+            color: var(--gray);
+            font-size: 0.75rem;
+        }
+        @media (min-width: 768px) {
+            .transaction-info p {
+                font-size: 0.875rem;
+            }
+        }
+
+        .mode-badge {
+            padding: 0.375rem 0.875rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .mode-badge {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+        .mode-get {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .mode-give {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .status-badge {
             padding: 0.25rem 0.75rem;
-            border-radius: 20px;
+            border-radius: 2rem;
             font-size: 0.7rem;
             font-weight: 600;
         }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-completed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
 
-        .badge-get { background: #D1FAE5; color: #065F46; }
-        .badge-give { background: #FEE2E2; color: #991B1B; }
-        .badge-completed { background: #DBEAFE; color: #1E40AF; }
-        .badge-no { background: #FEF3C7; color: #92400E; }
-        .badge-pending { background: #F1F5F9; color: #475569; }
-
-        .tx-card .tx-expand {
+        .expand-arrow {
+            color: var(--gray);
             transition: transform 0.3s ease;
-            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
         }
-        .tx-card .tx-expand.open { transform: rotate(180deg); }
+        @media (min-width: 768px) {
+            .expand-arrow {
+                font-size: 1rem;
+                margin-left: 1rem;
+            }
+        }
+        .expand-arrow.expanded {
+            transform: rotate(180deg);
+        }
 
-        .tx-details {
+        .details-container {
+            padding: 0 0.5rem 0.5rem 0.5rem;
             display: none;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border-color);
-            margin-top: 1rem;
+        }
+        @media (min-width: 768px) {
+            .details-container {
+                padding: 0 1rem 1rem 1rem;
+            }
+        }
+        .details-container.expanded {
+            display: block;
+            animation: slideDown 0.3s ease-out;
         }
 
-        .tx-details.open { display: block; }
-
-        .tx-details-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .tx-detail-item .label { font-size: 0.7rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-        .tx-detail-item .value { font-size: 0.9rem; font-weight: 500; }
+        .detail-item {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 0.75rem;
+        }
+        @media (min-width: 768px) {
+            .detail-item {
+                padding: 1.25rem;
+                margin-top: 1rem;
+            }
+        }
 
-        /* ===== USER CARD ===== */
-        .user-grid {
+        .detail-label {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+        }
+        .detail-value {
+            color: var(--dark);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+        @media (min-width: 768px) {
+            .detail-value {
+                font-size: 1rem;
+            }
+        }
+
+        .bill-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .bill-link:hover {
+            text-decoration: underline;
+        }
+
+        .admin-filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+        @media (min-width: 768px) {
+            .admin-filter-section {
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+            }
+        }
+
+        .filter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: 1fr;
             gap: 1rem;
+            align-items: end;
+        }
+        @media (min-width: 768px) {
+            .filter-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-label {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+        }
+        .filter-select {
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            background: white;
+            font-weight: 500;
+        }
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        @media (min-width: 640px) {
+            .users-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .users-grid {
+                grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            }
         }
 
         .user-card {
             background: white;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
             overflow: hidden;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
-
         .user-card:hover {
             border-color: var(--primary);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.1);
+            transform: translateY(-2px);
         }
-
-        .user-card .user-header {
+        .user-card.expanded {
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.15);
+        }
+        .user-card-inner {
             padding: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            cursor: pointer;
+            text-align: center;
         }
-
-        .user-card .user-avatar-lg {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        @media (min-width: 768px) {
+            .user-card-inner {
+                padding: 1.5rem;
+            }
+        }
+        .user-avatar {
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 700;
-            font-size: 1.1rem;
-            flex-shrink: 0;
+            font-size: 1.125rem;
+            margin: 0 auto 0.75rem auto;
         }
-
-        .user-card .user-name { font-weight: 600; }
-        .user-card .user-username { font-size: 0.8rem; color: var(--text-secondary); }
-        .user-card .user-expand-icon { transition: transform 0.3s ease; }
-        .user-card .user-expand-icon.open { transform: rotate(180deg); }
-
-        .user-card .user-body {
-            display: none;
-            padding: 0 1.25rem 1.25rem 1.25rem;
-            border-top: 1px solid var(--border-color);
+        @media (min-width: 768px) {
+            .user-avatar {
+                width: 3.5rem;
+                height: 3.5rem;
+                font-size: 1.25rem;
+                margin-bottom: 1rem;
+            }
         }
-
-        .user-card .user-body.open { display: block; }
-
-        .user-tx-item {
-            background: var(--bg-light);
-            border-radius: var(--radius-sm);
-            padding: 0.75rem 1rem;
+        .user-name {
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        @media (min-width: 768px) {
+            .user-name {
+                font-size: 1rem;
+            }
+        }
+        .user-username {
+            color: var(--gray);
+            font-size: 0.75rem;
             margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        }
+        @media (min-width: 768px) {
+            .user-username {
+                font-size: 0.875rem;
+            }
+        }
+        .user-expand-content {
+            border-top: 1px solid #e2e8f0;
+            background: var(--light);
+            display: none;
+            padding: 0 1rem 1rem 1rem;
+        }
+        .user-expand-content.open {
+            display: block;
+            animation: slideDown 0.3s ease-out;
         }
 
-        .user-tx-item:last-child { margin-bottom: 0; }
+        .expand-toggle-icon {
+            transition: transform 0.3s ease;
+            display: inline-block;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        .expand-toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
 
-        .user-tx-item .tx-info { font-size: 0.85rem; }
-        .user-tx-item .tx-status { font-size: 0.7rem; }
-
-        /* ===== MODAL ===== */
         .modal-overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             display: flex;
@@ -598,653 +509,1018 @@
             justify-content: center;
             z-index: 1000;
             padding: 1rem;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        .modal-box {
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
             background: white;
-            border-radius: var(--radius);
-            max-width: 560px;
+            border-radius: 20px;
+            max-width: 600px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            padding: 2rem;
-            box-shadow: var(--shadow-xl);
-            animation: modalIn 0.3s ease;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease-out;
         }
 
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95) translateY(20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
-        .modal-box .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 1rem;
+                max-height: 85vh;
+                border-radius: 16px;
+            }
         }
 
-        .modal-box .modal-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-
-        .modal-box .modal-close {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 0.75rem 1.5rem;
             border: none;
-            background: var(--bg-light);
-            color: var(--text-secondary);
+            border-radius: 12px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--dark);
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+        }
+
+        .login-container {
+            padding: 2rem;
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.1);
+        }
+        @media (min-width: 768px) {
+            .login-container {
+                padding: 2.5rem;
+                max-width: 480px;
+            }
+        }
+
+        .profile-pic-container {
+            position: relative;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        @media (min-width: 768px) {
+            .profile-pic-container {
+                width: 3rem;
+                height: 3rem;
+            }
+        }
+        .profile-pic-container:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+        .profile-pic {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        .profile-pic-fallback {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        @media (min-width: 768px) {
+            .profile-pic-fallback {
+                font-size: 1.2rem;
+            }
         }
 
-        .modal-box .modal-close:hover {
-            background: #FEE2E2;
-            color: var(--danger);
-        }
-
-        .modal-box .form-group { margin-bottom: 1.25rem; }
-        .modal-box .form-group label { display: block; font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.375rem; }
-        .modal-box .form-group input,
-        .modal-box .form-group select,
-        .modal-box .form-group textarea {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            transition: all 0.25s ease;
-        }
-
-        .modal-box .form-group input:focus,
-        .modal-box .form-group select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79,70,229,0.1);
-        }
-
-        .modal-box .form-group input:disabled {
-            background: var(--bg-light);
-            cursor: not-allowed;
-        }
-
-        .modal-box .form-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-        }
-
-        /* ===== PROFILE MENU ===== */
         .profile-menu {
             position: absolute;
-            top: calc(100% + 8px);
+            top: calc(100% + 0.75rem);
             right: 0;
+            z-index: 1000;
             min-width: 220px;
+        }
+        .profile-menu-content {
             background: white;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
+            border-radius: 16px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e2e8f0;
             overflow: hidden;
-            animation: menuIn 0.2s ease;
-            z-index: 200;
+            animation: slideDown 0.2s ease-out;
         }
-
-        @keyframes menuIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .profile-menu .menu-header {
+        .profile-info {
             padding: 1rem 1.25rem;
-            background: var(--bg-light);
-            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, var(--light), #e2e8f0);
         }
-
-        .profile-menu .menu-name { font-weight: 600; }
-        .profile-menu .menu-username { font-size: 0.8rem; color: var(--text-secondary); }
-
-        .profile-menu .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1.25rem;
-            border: none;
-            background: none;
+        .profile-name {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        .profile-username {
+            color: var(--gray);
+            font-size: 0.75rem;
+        }
+        .profile-menu-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+        }
+        .profile-menu-item {
             width: 100%;
+            padding: 0.75rem 1.25rem;
             text-align: left;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--dark);
+            font-size: 0.875rem;
             transition: all 0.2s ease;
-        }
-
-        .profile-menu .menu-item:hover {
-            background: var(--bg-light);
-        }
-
-        .profile-menu .menu-item.danger { color: var(--danger); }
-        .profile-menu .menu-item.danger:hover { background: #FEE2E2; }
-
-        /* ===== TOAST ===== */
-        .toast-container {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            max-width: 400px;
-        }
-
-        .toast {
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius-sm);
-            color: white;
-            font-weight: 500;
-            font-size: 0.9rem;
-            box-shadow: var(--shadow-lg);
-            animation: toastIn 0.4s ease;
+            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            font-weight: 500;
         }
-
-        .toast i { font-size: 1.1rem; }
-
-        .toast-success { background: var(--success); }
-        .toast-error { background: var(--danger); }
-        .toast-warning { background: var(--warning); }
-        .toast-info { background: var(--primary); }
-
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateX(40px); }
-            to { opacity: 1; transform: translateX(0); }
+        .profile-menu-item:hover {
+            background-color: var(--light);
+            color: var(--danger);
         }
-
-        /* ===== RESPONSIVE ===== */
+        .profile-menu-item i {
+            color: var(--gray);
+            width: 1.25rem;
+        }
+        .profile-menu-item:hover i {
+            color: var(--danger);
+        }
         @media (max-width: 768px) {
-            .login-container { padding: 1.5rem; }
-            .login-title { font-size: 1.5rem; }
-            .main-content { padding: 1rem; }
-            .app-header .container { padding: 0.5rem 1rem; }
-            .app-nav { padding: 0 0.75rem; gap: 0; }
-            .nav-tab { padding: 0.5rem 0.75rem; font-size: 0.75rem; }
-            .header-brand span { display: none; }
-            .header-user .user-name { display: none; }
-            .tx-details-grid { grid-template-columns: 1fr; }
-            .user-grid { grid-template-columns: 1fr; }
-            .modal-box { padding: 1.25rem; margin: 0.5rem; }
-            .modal-box .form-actions { flex-direction: column; }
-            .modal-box .form-actions button { width: 100%; }
-            .tx-card .tx-header { flex-wrap: wrap; }
+            .profile-menu {
+                right: -0.5rem;
+                min-width: 190px;
+            }
         }
 
-        @media (max-width: 480px) {
-            .stat-card .stat-number { font-size: 1.25rem; }
-            .tx-card .tx-title { font-size: 0.85rem; }
-            .tx-card { padding: 0.75rem 1rem; }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
-
-        /* ===== UTILITIES ===== */
-        .text-gradient {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+            flex: 1;
+        }
+        .header-title {
+            font-size: 1.125rem;
+            font-weight: 800;
+            min-width: 0;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.8));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        @media (min-width: 768px) {
+            .header-title {
+                font-size: 1.25rem;
+            }
+        }
+        .header-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+        @media (min-width: 768px) {
+            .header-subtitle {
+                font-size: 0.875rem;
+            }
         }
 
-        .gap-1 { gap: 0.25rem; }
-        .gap-2 { gap: 0.5rem; }
-        .gap-3 { gap: 0.75rem; }
-        .gap-4 { gap: 1rem; }
+        .loading-spinner {
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
 
-        .flex-center { display: flex; align-items: center; justify-content: center; }
-        .flex-between { display: flex; align-items: center; justify-content: space-between; }
-        .flex-col { display: flex; flex-direction: column; }
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
 
-        .mt-1 { margin-top: 0.25rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-3 { margin-top: 0.75rem; }
-        .mt-4 { margin-top: 1rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-3 { margin-bottom: 0.75rem; }
-        .mb-4 { margin-bottom: 1rem; }
+        .edit-btn {
+            background: var(--primary);
+            color: white;
+            padding: 0.375rem 0.875rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            white-space: nowrap;
+        }
+        .edit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
 
-        .w-full { width: 100%; }
-        .text-center { text-align: center; }
-        .text-sm { font-size: 0.85rem; }
-        .text-xs { font-size: 0.7rem; }
-        .text-muted { color: var(--text-secondary); }
-        .font-bold { font-weight: 700; }
-        .font-semibold { font-weight: 600; }
+        .user-transaction-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        .user-transaction-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.06);
+        }
+        .user-transaction-item:first-child {
+            margin-top: 0.75rem;
+        }
+        .user-transaction-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .transaction-amount {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .transaction-amount.get {
+            color: #166534;
+        }
+        .transaction-amount.give {
+            color: #dc2626;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            background: white;
+            font-weight: 500;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+        .input-field:disabled {
+            background: var(--light);
+            cursor: not-allowed;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+        }
 
         .empty-state {
             text-align: center;
-            padding: 3rem 1rem;
-            color: var(--text-secondary);
+            padding: 3rem 1.5rem;
+            color: var(--gray);
         }
-
         .empty-state i {
             font-size: 3rem;
-            color: var(--border-color);
             margin-bottom: 1rem;
+            opacity: 0.3;
         }
-
         .empty-state h3 {
+            font-size: 1.125rem;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+        .empty-state p {
+            font-size: 0.875rem;
         }
     </style>
 </head>
 <body>
+    <!-- Login Page -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="login-container rounded-2xl">
+            <div id="loginSection">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-exchange-alt text-white text-2xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800">Transaction Manager</h1>
+                    <p class="text-gray-500 mt-1 text-sm">Sign in to your account</p>
+                </div>
 
-    <!-- ===== LOGIN PAGE ===== -->
-    <div id="loginPage" class="login-wrapper">
-        <div class="login-container">
-            <div class="login-logo">
-                <i class="fas fa-coins"></i>
-            </div>
-            <h1 class="login-title">Transaction Manager</h1>
-            <p class="login-subtitle">Manage your transactions seamlessly</p>
-
-            <div id="loginSection" class="mt-6">
                 <form id="loginForm">
-                    <div class="input-group">
-                        <label for="username"><i class="fas fa-user mr-1"></i>Username</label>
-                        <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username">
-                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="username" class="input-label">Username</label>
+                            <input type="text" id="username" name="username" required
+                            class="input-field" placeholder="Enter your username">
+                        </div>
 
-                    <div class="input-group">
-                        <label for="password"><i class="fas fa-lock mr-1"></i>Password</label>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
-                    </div>
+                        <div>
+                            <label for="password" class="input-label">Password</label>
+                            <input type="password" id="password" name="password" required
+                            class="input-field" placeholder="Enter your password">
+                        </div>
 
-                    <div id="loginError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm mb-3 border border-red-200"></div>
+                        <div id="loginError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
 
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
-                    </button>
-
-                    <div class="text-center mt-3">
-                        <button type="button" onclick="showSignup()" class="text-sm text-primary hover:underline font-medium" style="background:none;border:none;cursor:pointer;color:var(--primary);">
-                            Don't have an account? <span class="font-bold">Register</span>
+                        <button type="submit" class="btn-primary w-full text-base">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
                         </button>
                     </div>
                 </form>
+
+                <div class="text-center mt-6">
+                    <p class="text-gray-600 text-sm">Don't have an account?
+                        <button onclick="showSignup()" class="text-indigo-600 hover:text-indigo-800 font-semibold">Register</button>
+                    </p>
+                </div>
             </div>
 
-            <div id="signupSection" class="hidden mt-4">
+            <div id="signupSection" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-user-plus text-white text-2xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800">Create Account</h1>
+                    <p class="text-gray-500 mt-1 text-sm">Register for access</p>
+                </div>
+
                 <form id="signupForm">
-                    <div class="input-group">
-                        <label for="signupName"><i class="fas fa-user mr-1"></i>Full Name *</label>
-                        <input type="text" id="signupName" name="signupName" placeholder="Enter your full name" required>
-                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="signupName" class="input-label">Full Name *</label>
+                            <input type="text" id="signupName" name="signupName" required
+                            class="input-field" placeholder="Enter your full name">
+                        </div>
 
-                    <div class="input-group">
-                        <label for="signupPhone"><i class="fas fa-phone mr-1"></i>Phone Number *</label>
-                        <input type="tel" id="signupPhone" name="signupPhone" placeholder="Enter your phone number" required>
-                    </div>
+                        <div>
+                            <label for="signupPhone" class="input-label">Phone Number *</label>
+                            <input type="tel" id="signupPhone" name="signupPhone" required
+                            class="input-field" placeholder="Enter your phone number">
+                        </div>
 
-                    <div class="input-group">
-                        <label for="signupGmail"><i class="fas fa-envelope mr-1"></i>Gmail (Optional)</label>
-                        <input type="email" id="signupGmail" name="signupGmail" placeholder="Enter your email">
-                    </div>
+                        <div>
+                            <label for="signupGmail" class="input-label">Gmail (Optional)</label>
+                            <input type="email" id="signupGmail" name="signupGmail"
+                            class="input-field" placeholder="Enter your Gmail address">
+                        </div>
 
-                    <div id="signupError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm mb-3 border border-red-200"></div>
-                    <div id="signupSuccess" class="hidden bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm mb-3 border border-green-200"></div>
+                        <div id="signupError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
+                        <div id="signupSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm"></div>
 
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-user-plus mr-2"></i>Create Account
-                    </button>
-
-                    <div class="text-center mt-3">
-                        <button type="button" onclick="showLogin()" class="text-sm text-primary hover:underline font-medium" style="background:none;border:none;cursor:pointer;color:var(--primary);">
-                            Already have an account? <span class="font-bold">Sign In</span>
+                        <button type="submit" class="btn-success w-full text-base">
+                            <i class="fas fa-user-plus mr-2"></i>Create Account
                         </button>
                     </div>
                 </form>
+
+                <div class="text-center mt-6">
+                    <p class="text-gray-600 text-sm">Already have an account?
+                        <button onclick="showLogin()" class="text-indigo-600 hover:text-indigo-800 font-semibold">Sign in</button>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- Dashboard Container -->
     <div id="dashboardContainer" class="hidden min-h-screen bg-gray-50">
-
-        <!-- HEADER -->
-        <header class="app-header">
-            <div class="container">
-                <div class="header-brand">
-                    <div class="brand-icon"><i class="fas fa-coins"></i></div>
-                    <span>Transaction Manager</span>
-                </div>
-                <div class="header-user">
-                    <span class="user-name" id="welcomeUser">Welcome</span>
-                    <div class="relative">
-                        <img id="profilePic" src="" alt="Profile" class="user-avatar" onerror="showProfileFallback(this)">
-                        <div id="profileFallback" class="user-avatar hidden flex-center" style="background:rgba(255,255,255,0.15);color:white;font-weight:600;">
-                            <i class="fas fa-user"></i>
+        <header class="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-lg sticky top-0 z-50">
+            <div class="container mx-auto px-3 md:px-6 py-3 md:py-4">
+                <div class="header-content">
+                    <div class="header-info">
+                        <div class="min-w-0">
+                            <h1 class="header-title">Transaction Manager</h1>
+                            <p class="header-subtitle" id="welcomeUser">Welcome</p>
                         </div>
-                        <div id="profileMenu" class="profile-menu hidden">
-                            <div class="menu-header">
-                                <div class="menu-name" id="profileName">User</div>
-                                <div class="menu-username" id="profileUsername">@username</div>
+                    </div>
+
+                    <div class="relative">
+                        <button onclick="toggleProfileMenu()" class="profile-pic-container transition duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded-full">
+                            <img id="profilePic" src="" alt="Profile" class="profile-pic" onerror="showProfileFallback(this)">
+                            <div id="profileFallback" class="profile-pic-fallback hidden">
+                                <i class="fas fa-user"></i>
                             </div>
-                            <button onclick="openChangePasswordModal()" class="menu-item">
-                                <i class="fas fa-key"></i> Change Password
-                            </button>
-                            <button onclick="logout()" class="menu-item danger">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </button>
+                        </button>
+
+                        <div id="profileMenu" class="profile-menu hidden">
+                            <div class="profile-menu-content">
+                                <div class="profile-info">
+                                    <div class="profile-name" id="profileName">User Name</div>
+                                    <div class="profile-username" id="profileUsername">@username</div>
+                                </div>
+                                <div class="profile-menu-divider"></div>
+                                <button onclick="openChangePasswordModal()" class="profile-menu-item">
+                                    <i class="fas fa-key"></i>Change Password
+                                </button>
+                                <button onclick="logout()" class="profile-menu-item">
+                                    <i class="fas fa-sign-out-alt"></i>Logout
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- NAVIGATION -->
-        <nav id="adminNav" class="app-nav hidden">
-            <button onclick="showPage('adminTransactions')" class="nav-tab active" data-page="adminTransactions">
-                <i class="fas fa-exchange-alt"></i> Transactions
-            </button>
-            <button onclick="showPage('adminUsers')" class="nav-tab" data-page="adminUsers">
-                <i class="fas fa-users"></i> Users
-            </button>
-        </nav>
-
-        <nav id="userNav" class="app-nav hidden">
-            <button onclick="showPage('userTransactions')" class="nav-tab active" data-page="userTransactions">
-                <i class="fas fa-list"></i> My Transactions
-            </button>
-        </nav>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-
-            <!-- Admin Transactions -->
-            <div id="adminTransactionsPage" class="page-content">
-                <div class="flex-between mb-4 flex-wrap gap-2">
-                    <div>
-                        <h2 class="text-xl font-bold">📊 Transactions</h2>
-                        <p class="text-sm text-muted">Manage all transactions</p>
-                    </div>
-                    <button onclick="openAddTransactionModal()" class="btn-success" style="padding:0.75rem 1.5rem;font-size:0.9rem;">
-                        <i class="fas fa-plus mr-2"></i>Add Transaction
+        <nav id="adminNav" class="bg-white shadow-sm border-b hidden sticky top-[72px] z-40">
+            <div class="container mx-auto px-3 md:px-6">
+                <div class="flex space-x-1 overflow-x-auto py-3">
+                    <button onclick="showPage('adminTransactions')" class="nav-btn active-admin" data-page="adminTransactions">
+                        <i class="fas fa-exchange-alt mr-1 md:mr-2"></i>Transactions
+                    </button>
+                    <button onclick="showPage('adminUsers')" class="nav-btn" data-page="adminUsers">
+                        <i class="fas fa-users mr-1 md:mr-2"></i>Users
                     </button>
                 </div>
-                <div id="adminTransactionsList"></div>
+            </div>
+        </nav>
+
+        <nav id="userNav" class="bg-white shadow-sm border-b hidden sticky top-[72px] z-40">
+            <div class="container mx-auto px-3 md:px-6">
+                <div class="flex space-x-1 overflow-x-auto py-3">
+                    <button onclick="showPage('userTransactions')" class="nav-btn active-user" data-page="userTransactions">
+                        <i class="fas fa-exchange-alt mr-1 md:mr-2"></i>Transactions
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container mx-auto main-container">
+
+            <!-- Admin Transactions Page -->
+            <div id="adminTransactionsPage" class="page-content hidden">
+                <div class="glass-card rounded-2xl p-4 md:p-8">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-exchange-alt text-indigo-600"></i>
+                                Transactions
+                            </h2>
+                            <p class="text-gray-500 text-sm">Manage all transactions</p>
+                        </div>
+                        <button onclick="openAddTransactionModal()" class="btn-primary">
+                            <i class="fas fa-plus mr-2"></i>Add Transaction
+                        </button>
+                    </div>
+
+                    <div id="adminTransactionsList"></div>
+                </div>
             </div>
 
-            <!-- Admin Users -->
+            <!-- Admin Users Page -->
             <div id="adminUsersPage" class="page-content hidden">
-                <div class="flex-between mb-4 flex-wrap gap-2">
-                    <div>
-                        <h2 class="text-xl font-bold">👥 All Users</h2>
-                        <p class="text-sm text-muted">Manage users and their transactions</p>
+                <div class="glass-card rounded-2xl p-4 md:p-8">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-users text-purple-600"></i>
+                                Users
+                            </h2>
+                            <p class="text-gray-500 text-sm">Manage all users</p>
+                        </div>
+                        <button onclick="openAddUserModal()" class="btn-success">
+                            <i class="fas fa-user-plus mr-2"></i>Add User
+                        </button>
                     </div>
-                    <button onclick="openAddUserModal()" class="btn-primary" style="padding:0.75rem 1.5rem;font-size:0.9rem;width:auto;">
-                        <i class="fas fa-user-plus mr-2"></i>Add User
-                    </button>
+                    <div id="adminUsersList" class="users-grid"></div>
                 </div>
-                <div id="adminUsersList" class="user-grid"></div>
             </div>
 
-            <!-- User Transactions -->
+            <!-- User Transactions Page -->
             <div id="userTransactionsPage" class="page-content hidden">
-                <div class="mb-4">
-                    <h2 class="text-xl font-bold">📋 My Transactions</h2>
-                    <p class="text-sm text-muted">View your transaction details</p>
+                <div class="glass-card rounded-2xl p-4 md:p-8">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2 mb-6">
+                        <i class="fas fa-exchange-alt text-cyan-600"></i>
+                        My Transactions
+                    </h2>
+                    <div id="userTransactionsList"></div>
                 </div>
-                <div id="userTransactionsList"></div>
             </div>
 
         </main>
     </div>
 
-    <!-- ===== ADD TRANSACTION MODAL ===== -->
+    <!-- Add Transaction Modal -->
     <div id="addTransactionModal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3 class="modal-title text-gradient">Add New Transaction</h3>
-                <button onclick="closeAddTransactionModal()" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <form id="addTransactionForm">
-                <div class="form-group">
-                    <label>Transaction ID</label>
-                    <input type="text" id="autoTransactionId" readonly disabled>
-                </div>
-                <div class="form-group">
-                    <label>Title *</label>
-                    <input type="text" id="transactionTitle" placeholder="Enter transaction title" required>
-                </div>
-                <div class="form-group">
-                    <label>Mode *</label>
-                    <select id="transactionMode" required>
-                        <option value="">Select Mode</option>
-                        <option value="to get">To Get</option>
-                        <option value="to give">To Give</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Amount (Rs) *</label>
-                    <input type="number" id="transactionAmount" placeholder="Enter amount" min="0" step="1" required>
-                </div>
-                <div class="form-group">
-                    <label>Upload Bill Image</label>
-                    <input type="file" id="billUpload" accept="image/*">
-                    <p class="text-xs text-muted mt-1">Supported: JPG, PNG, GIF (Max 5MB)</p>
-                </div>
-                <div class="form-group">
-                    <label>Date & Time *</label>
-                    <input type="datetime-local" id="transactionDate" required>
-                </div>
-
-                <div id="addTransactionError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200"></div>
-                <div id="addTransactionSuccess" class="hidden bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm border border-green-200"></div>
-
-                <div class="form-actions">
-                    <button type="button" onclick="closeAddTransactionModal()" class="btn-outline">Cancel</button>
-                    <button type="submit" class="btn-success" style="padding:0.75rem 2rem;font-size:0.9rem;">
-                        <i class="fas fa-plus mr-2"></i>Add Transaction
+        <div class="modal-content">
+            <div class="p-5 md:p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-emerald-600"></i>
+                        Add New Transaction
+                    </h3>
+                    <button onclick="closeAddTransactionModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-            </form>
+
+                <form id="addTransactionForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="input-label">Transaction ID</label>
+                            <input type="text" id="autoTransactionId" class="input-field bg-gray-100 text-gray-600" readonly>
+                        </div>
+
+                        <div>
+                            <label for="transactionTitle" class="input-label">Title *</label>
+                            <input type="text" id="transactionTitle" name="transactionTitle" required
+                            class="input-field" placeholder="Enter transaction title">
+                        </div>
+
+                        <div>
+                            <label for="transactionMode" class="input-label">Mode *</label>
+                            <select id="transactionMode" name="transactionMode" required
+                            class="input-field">
+                                <option value="">-- Select Mode --</option>
+                                <option value="to get">To Get</option>
+                                <option value="to give">To Give</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="transactionAmount" class="input-label">Amount (Rs) *</label>
+                            <input type="number" id="transactionAmount" name="transactionAmount" required min="0" step="1"
+                            class="input-field" placeholder="Enter amount">
+                        </div>
+
+                        <div>
+                            <label for="billUpload" class="input-label">Upload Bill Image</label>
+                            <input type="file" id="billUpload" name="billUpload" accept="image/*"
+                            class="input-field p-2">
+                            <p class="text-xs text-gray-400 mt-1">Supported: JPG, PNG (Max 5MB)</p>
+                        </div>
+
+                        <div>
+                            <label for="transactionDate" class="input-label">Date & Time *</label>
+                            <input type="datetime-local" id="transactionDate" name="transactionDate" required
+                            class="input-field">
+                        </div>
+                    </div>
+
+                    <div id="addTransactionError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+                    <div id="addTransactionSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+
+                    <div class="flex flex-col md:flex-row justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeAddTransactionModal()" class="btn-secondary w-full md:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-success w-full md:w-auto">
+                            <i class="fas fa-plus mr-2"></i>Add Transaction
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- ===== EDIT TRANSACTION MODAL ===== -->
+    <!-- Edit Transaction Modal -->
     <div id="editTransactionModal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3 class="modal-title text-gradient">Edit Transaction</h3>
-                <button onclick="closeEditTransactionModal()" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <form id="editTransactionForm">
-                <div class="form-group">
-                    <label>Transaction ID</label>
-                    <input type="text" id="editTransactionId" readonly disabled>
-                </div>
-                <div class="form-group">
-                    <label>Title *</label>
-                    <input type="text" id="editTransactionTitle" required>
-                </div>
-                <div class="form-group">
-                    <label>Mode *</label>
-                    <select id="editTransactionMode" required>
-                        <option value="to get">To Get</option>
-                        <option value="to give">To Give</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Amount (Rs) *</label>
-                    <input type="number" id="editTransactionAmount" min="0" step="1" required>
-                </div>
-                <div class="form-group">
-                    <label>Upload New Bill (Optional)</label>
-                    <input type="file" id="editBillUpload" accept="image/*">
-                    <div id="editCurrentBill" class="mt-1 text-sm text-muted"></div>
-                </div>
-                <div class="form-group">
-                    <label>Date & Time *</label>
-                    <input type="datetime-local" id="editTransactionDate" required>
-                </div>
-
-                <div id="editTransactionError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200"></div>
-                <div id="editTransactionSuccess" class="hidden bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm border border-green-200"></div>
-
-                <div class="form-actions">
-                    <button type="button" onclick="closeEditTransactionModal()" class="btn-outline">Cancel</button>
-                    <button type="submit" class="btn-primary" style="padding:0.75rem 2rem;font-size:0.9rem;">
-                        <i class="fas fa-save mr-2"></i>Update
+        <div class="modal-content">
+            <div class="p-5 md:p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-edit text-indigo-600"></i>
+                        Edit Transaction
+                    </h3>
+                    <button onclick="closeEditTransactionModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-            </form>
+
+                <form id="editTransactionForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="input-label">Transaction ID</label>
+                            <input type="text" id="editTransactionId" class="input-field bg-gray-100 text-gray-600" readonly>
+                        </div>
+
+                        <div>
+                            <label for="editTransactionTitle" class="input-label">Title *</label>
+                            <input type="text" id="editTransactionTitle" name="editTransactionTitle" required
+                            class="input-field" placeholder="Enter transaction title">
+                        </div>
+
+                        <div>
+                            <label for="editTransactionMode" class="input-label">Mode *</label>
+                            <select id="editTransactionMode" name="editTransactionMode" required
+                            class="input-field">
+                                <option value="">-- Select Mode --</option>
+                                <option value="to get">To Get</option>
+                                <option value="to give">To Give</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="editTransactionAmount" class="input-label">Amount (Rs) *</label>
+                            <input type="number" id="editTransactionAmount" name="editTransactionAmount" required min="0" step="1"
+                            class="input-field" placeholder="Enter amount">
+                        </div>
+
+                        <div>
+                            <label for="editBillUpload" class="input-label">Upload Bill Image (Optional)</label>
+                            <input type="file" id="editBillUpload" name="editBillUpload" accept="image/*"
+                            class="input-field p-2">
+                            <p class="text-xs text-gray-400 mt-1">Leave empty to keep existing bill</p>
+                            <div id="editCurrentBill" class="mt-2"></div>
+                        </div>
+
+                        <div>
+                            <label for="editTransactionDate" class="input-label">Date & Time *</label>
+                            <input type="datetime-local" id="editTransactionDate" name="editTransactionDate" required
+                            class="input-field">
+                        </div>
+                    </div>
+
+                    <div id="editTransactionError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+                    <div id="editTransactionSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+
+                    <div class="flex flex-col md:flex-row justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeEditTransactionModal()" class="btn-secondary w-full md:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary w-full md:w-auto">
+                            <i class="fas fa-save mr-2"></i>Update Transaction
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- ===== EDIT USER TRANSACTION MODAL (Admin) ===== -->
-    <div id="editUserTransactionModal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3 class="modal-title text-gradient">Edit User Transaction</h3>
-                <button onclick="closeEditUserTransactionModal()" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <form id="editUserTransactionForm">
-                <div class="form-group">
-                    <label>User</label>
-                    <input type="text" id="editUserTxnUsername" readonly disabled>
-                </div>
-                <div class="form-group">
-                    <label>Transaction</label>
-                    <input type="text" id="editUserTxnTitle" readonly disabled>
-                </div>
-                <input type="hidden" id="editUserTxnId">
-                <input type="hidden" id="editUserTxnMode">
-                <div class="form-group">
-                    <label>Status *</label>
-                    <select id="editUserTxnStatus" required>
-                        <option value="pending">Pending</option>
-                        <option value="completed">Completed</option>
-                        <option value="no">No</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Amount (Rs) *</label>
-                    <input type="number" id="editUserTxnAmount" min="0" step="1" required>
-                </div>
-                <div class="form-group">
-                    <label>Date *</label>
-                    <input type="datetime-local" id="editUserTxnDate" required>
-                </div>
-
-                <div id="editUserTxnError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200"></div>
-                <div id="editUserTxnSuccess" class="hidden bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm border border-green-200"></div>
-
-                <div class="form-actions">
-                    <button type="button" onclick="closeEditUserTransactionModal()" class="btn-outline">Cancel</button>
-                    <button type="submit" class="btn-primary" style="padding:0.75rem 2rem;font-size:0.9rem;">
-                        <i class="fas fa-save mr-2"></i>Update
+    <!-- User Transaction Edit Modal (Admin) -->
+    <div id="userTransactionEditModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-5 md:p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-user-edit text-purple-600"></i>
+                        Edit User Transaction
+                    </h3>
+                    <button onclick="closeUserTransactionEditModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-            </form>
+
+                <form id="userTransactionEditForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="input-label">User</label>
+                            <input type="text" id="userEditUsername" class="input-field bg-gray-100 text-gray-600" readonly>
+                        </div>
+
+                        <div>
+                            <label class="input-label">Transaction</label>
+                            <input type="text" id="userEditTransactionTitle" class="input-field bg-gray-100 text-gray-600" readonly>
+                        </div>
+
+                        <input type="hidden" id="userEditTransactionId">
+
+                        <div>
+                            <label for="userEditMode" class="input-label">Mode *</label>
+                            <select id="userEditMode" name="userEditMode" required
+                            class="input-field">
+                                <option value="to get">To Get</option>
+                                <option value="to give">To Give</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="userEditStatus" class="input-label">Status *</label>
+                            <select id="userEditStatus" name="userEditStatus" required
+                            class="input-field">
+                                <option value="pending">Pending</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="userEditAmount" class="input-label">Amount (Rs) *</label>
+                            <input type="number" id="userEditAmount" name="userEditAmount" required min="0" step="1"
+                            class="input-field" placeholder="Enter amount">
+                        </div>
+
+                        <div>
+                            <label for="userEditDate" class="input-label">Date & Time *</label>
+                            <input type="datetime-local" id="userEditDate" name="userEditDate" required
+                            class="input-field">
+                        </div>
+                    </div>
+
+                    <div id="userEditError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+                    <div id="userEditSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+
+                    <div class="flex flex-col md:flex-row justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeUserTransactionEditModal()" class="btn-secondary w-full md:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary w-full md:w-auto">
+                            <i class="fas fa-save mr-2"></i>Update
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- ===== ADD USER MODAL ===== -->
+    <!-- Add User Modal -->
     <div id="addUserModal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3 class="modal-title text-gradient">Add New User</h3>
-                <button onclick="closeAddUserModal()" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <form id="addUserForm">
-                <div class="form-group">
-                    <label>Username *</label>
-                    <input type="text" id="addUserUsername" placeholder="Enter username" required>
-                </div>
-                <div class="form-group">
-                    <label>Full Name *</label>
-                    <input type="text" id="addUserFullName" placeholder="Enter full name" required>
-                </div>
-                <div class="form-group">
-                    <label>Password *</label>
-                    <input type="text" id="addUserPassword" placeholder="Enter password" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <select id="addUserRole">
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-
-                <div id="addUserError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200"></div>
-                <div id="addUserSuccess" class="hidden bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm border border-green-200"></div>
-
-                <div class="form-actions">
-                    <button type="button" onclick="closeAddUserModal()" class="btn-outline">Cancel</button>
-                    <button type="submit" class="btn-success" style="padding:0.75rem 2rem;font-size:0.9rem;">
-                        <i class="fas fa-user-plus mr-2"></i>Add User
+        <div class="modal-content">
+            <div class="p-5 md:p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-user-plus text-emerald-600"></i>
+                        Add New User
+                    </h3>
+                    <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-            </form>
+
+                <form id="addUserForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="addUserUsername" class="input-label">Username *</label>
+                            <input type="text" id="addUserUsername" name="addUserUsername" required
+                            class="input-field" placeholder="Enter username">
+                        </div>
+
+                        <div>
+                            <label for="addUserPassword" class="input-label">Password *</label>
+                            <input type="text" id="addUserPassword" name="addUserPassword" required
+                            class="input-field" placeholder="Enter password">
+                        </div>
+
+                        <div>
+                            <label for="addUserFullName" class="input-label">Full Name *</label>
+                            <input type="text" id="addUserFullName" name="addUserFullName" required
+                            class="input-field" placeholder="Enter full name">
+                        </div>
+
+                        <div>
+                            <label for="addUserRole" class="input-label">Role</label>
+                            <select id="addUserRole" name="addUserRole" class="input-field">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="addUserError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+                    <div id="addUserSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+
+                    <div class="flex flex-col md:flex-row justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeAddUserModal()" class="btn-secondary w-full md:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-success w-full md:w-auto">
+                            <i class="fas fa-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- ===== CHANGE PASSWORD MODAL ===== -->
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="p-5 md:p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-user-edit text-indigo-600"></i>
+                        Edit User
+                    </h3>
+                    <button onclick="closeEditUserModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="editUserForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="input-label">Username</label>
+                            <input type="text" id="editUserUsername" class="input-field bg-gray-100 text-gray-600" readonly>
+                        </div>
+
+                        <div>
+                            <label for="editUserFullName" class="input-label">Full Name *</label>
+                            <input type="text" id="editUserFullName" name="editUserFullName" required
+                            class="input-field" placeholder="Enter full name">
+                        </div>
+
+                        <div>
+                            <label for="editUserRole" class="input-label">Role</label>
+                            <select id="editUserRole" name="editUserRole" class="input-field">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="editUserPassword" class="input-label">New Password (leave empty to keep current)</label>
+                            <input type="text" id="editUserPassword" name="editUserPassword"
+                            class="input-field" placeholder="Enter new password">
+                        </div>
+                    </div>
+
+                    <div id="editUserError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+                    <div id="editUserSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+
+                    <div class="flex flex-col md:flex-row justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeEditUserModal()" class="btn-secondary w-full md:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary w-full md:w-auto">
+                            <i class="fas fa-save mr-2"></i>Update User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
     <div id="changePasswordModal" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width:440px;">
-            <div class="modal-header">
-                <h3 class="modal-title text-gradient">Change Password</h3>
-                <button onclick="closeChangePasswordModal()" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <form id="changePasswordForm">
-                <div class="form-group">
-                    <label>Current Password *</label>
-                    <input type="password" id="currentPassword" required>
-                </div>
-                <div class="form-group">
-                    <label>New Password *</label>
-                    <input type="password" id="newPassword" required minlength="6" placeholder="Minimum 6 characters">
-                </div>
-                <div class="form-group">
-                    <label>Confirm New Password *</label>
-                    <input type="password" id="confirmPassword" required minlength="6">
-                </div>
-
-                <div id="changePasswordError" class="hidden bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200"></div>
-                <div id="changePasswordSuccess" class="hidden bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm border border-green-200"></div>
-
-                <div class="form-actions">
-                    <button type="button" onclick="closeChangePasswordModal()" class="btn-outline">Cancel</button>
-                    <button type="submit" class="btn-primary" style="padding:0.75rem 2rem;font-size:0.9rem;">
-                        <i class="fas fa-key mr-2"></i>Change
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="p-5 md:p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-key text-indigo-600"></i>
+                        Change Password
+                    </h3>
+                    <button onclick="closeChangePasswordModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-            </form>
+
+                <form id="changePasswordForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="currentPassword" class="input-label">Current Password *</label>
+                            <input type="password" id="currentPassword" name="currentPassword" required
+                            class="input-field" placeholder="Enter current password">
+                        </div>
+
+                        <div>
+                            <label for="newPassword" class="input-label">New Password *</label>
+                            <input type="password" id="newPassword" name="newPassword" required minlength="6"
+                            class="input-field" placeholder="Minimum 6 characters">
+                        </div>
+
+                        <div>
+                            <label for="confirmPassword" class="input-label">Confirm New Password *</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6"
+                            class="input-field" placeholder="Confirm new password">
+                        </div>
+                    </div>
+
+                    <div id="changePasswordError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+                    <div id="changePasswordSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm mt-4"></div>
+
+                    <div class="flex flex-col md:flex-row justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeChangePasswordModal()" class="btn-secondary w-full md:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary w-full md:w-auto">
+                            <i class="fas fa-key mr-2"></i>Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-
-    <!-- ===== TOAST CONTAINER ===== -->
-    <div id="toastContainer" class="toast-container"></div>
 
     <script src="transactions.js"></script>
 
     <script>
         // ---- Profile menu functions ----
         function toggleProfileMenu() {
-            const menu = document.getElementById('profileMenu');
-            menu.classList.toggle('hidden');
+            const profileMenu = document.getElementById('profileMenu');
+            profileMenu.classList.toggle('hidden');
         }
 
         function showProfileFallback(img) {
@@ -1254,54 +1530,67 @@
         }
 
         function loadUserProfile(username) {
-            const pic = document.getElementById('profilePic');
-            const name = document.getElementById('profileName');
-            const uname = document.getElementById('profileUsername');
-            const fallback = document.getElementById('profileFallback');
+            const profilePic = document.getElementById('profilePic');
+            const profileName = document.getElementById('profileName');
+            const profileUsername = document.getElementById('profileUsername');
+            const profileFallback = document.getElementById('profileFallback');
 
-            pic.src = `https://quaf.tech/pic/${username}.png`;
-            pic.onerror = function() {
+            profilePic.src = `https://quaf.tech/pic/${username}.png`;
+            profilePic.onerror = function() {
                 this.onerror = function() {
                     this.onerror = function() {
                         this.style.display = 'none';
-                        fallback.classList.remove('hidden');
+                        profileFallback.classList.remove('hidden');
                     };
                     this.src = `https://quaf.tech/pic/${username}.jpeg`;
                 };
                 this.src = `https://quaf.tech/pic/${username}.jpg`;
             };
-            pic.style.display = 'block';
-            fallback.classList.add('hidden');
+
+            profilePic.style.display = 'block';
+            profileFallback.classList.add('hidden');
 
             if (currentUser) {
-                name.textContent = currentUser.name;
-                uname.textContent = `@${username}`;
+                profileName.textContent = currentUser.name;
+                profileUsername.textContent = `@${username}`;
             }
         }
 
-        document.addEventListener('click', function(e) {
-            const container = e.target.closest('.header-user');
-            const menu = document.getElementById('profileMenu');
-            if (!container && menu && !menu.classList.contains('hidden')) {
-                menu.classList.add('hidden');
+        document.addEventListener('click', function(event) {
+            const profileContainer = event.target.closest('.profile-pic-container');
+            const profileMenu = document.getElementById('profileMenu');
+
+            if (!profileContainer && profileMenu && !profileMenu.classList.contains('hidden')) {
+                profileMenu.classList.add('hidden');
             }
         });
 
-        // ---- Security ----
-        document.addEventListener("contextmenu", e => e.preventDefault());
-        document.addEventListener("keydown", e => {
-            if (e.key === "F12") e.preventDefault();
-            if (e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key)) e.preventDefault();
-            if (e.ctrlKey && ["u","U","s","S"].includes(e.key)) e.preventDefault();
+        document.addEventListener("contextmenu", function(e) {
+            e.preventDefault();
         });
 
-        // ---- Restore session ----
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "F12") {
+                e.preventDefault();
+            }
+            if (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C")) {
+                e.preventDefault();
+            }
+            if (e.ctrlKey && (e.key === "u" || e.key === "U")) {
+                e.preventDefault();
+            }
+            if (e.ctrlKey && (e.key === "s" || e.key === "S")) {
+                e.preventDefault();
+            }
+        });
+
+        // ---- Login persistence: restore session on load ----
         (function restoreSession() {
             const saved = sessionStorage.getItem('transaction_session');
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
-                    if (data.user && data.timestamp && (Date.now() - data.timestamp < 24*60*60*1000)) {
+                    if (data.user && data.timestamp && (Date.now() - data.timestamp < 24 * 60 * 60 * 1000)) {
                         currentUser = data.user;
                         document.getElementById('loginPage').classList.add('hidden');
                         document.getElementById('dashboardContainer').classList.remove('hidden');
@@ -1327,7 +1616,7 @@
             }
         })();
 
-        // ---- Override login ----
+        // ---- Override login to save session ----
         const originalLogin = login;
         login = async function() {
             const username = document.getElementById('username').value.trim();
@@ -1338,10 +1627,10 @@
                 return;
             }
 
-            const btn = document.querySelector('#loginForm button[type="submit"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
-            btn.disabled = true;
+            const loginBtn = document.querySelector('#loginForm button[type="submit"]');
+            const originalText = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
+            loginBtn.disabled = true;
 
             try {
                 const users = await api.getSheet("user_credentials", false);
@@ -1382,6 +1671,7 @@
                     }
                     setTimeout(() => preloadCriticalData(), 100);
                     hideError();
+
                     history.pushState(null, '', window.location.href);
                 } else {
                     showError('Invalid username or password');
@@ -1389,12 +1679,12 @@
             } catch (error) {
                 showError('Network error: ' + error.message);
             } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
             }
         };
 
-        // ---- Override logout ----
+        // ---- Override logout to clear session ----
         const originalLogout = logout;
         logout = function() {
             sessionStorage.removeItem('transaction_session');
@@ -1403,14 +1693,14 @@
         };
 
         window.addEventListener('popstate', function(e) {
-            if (currentUser && document.getElementById('loginPage') && !document.getElementById('loginPage').classList.contains('hidden')) {
+            if (currentUser && document.getElementById('loginPage') && !document.getElementById('loginPage')
+                .classList.contains('hidden')) {
                 document.getElementById('loginPage').classList.add('hidden');
                 document.getElementById('dashboardContainer').classList.remove('hidden');
                 history.pushState(null, '', window.location.href);
             }
         });
 
-        // ---- UI Helpers ----
         function showSignup() {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('signupSection').classList.remove('hidden');
@@ -1424,55 +1714,36 @@
             hideSignupSuccess();
         }
 
-        function showError(msg) {
-            const el = document.getElementById('loginError');
-            el.textContent = msg;
-            el.classList.remove('hidden');
+        function showError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
 
         function hideError() {
             document.getElementById('loginError').classList.add('hidden');
         }
 
-        function showSignupError(msg) {
-            const el = document.getElementById('signupError');
-            el.textContent = msg;
-            el.classList.remove('hidden');
+        function showSignupError(message) {
+            const errorDiv = document.getElementById('signupError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
 
         function hideSignupError() {
             document.getElementById('signupError').classList.add('hidden');
         }
 
-        function showSignupSuccess(msg) {
-            const el = document.getElementById('signupSuccess');
-            el.textContent = msg;
-            el.classList.remove('hidden');
+        function showSignupSuccess(message) {
+            const successDiv = document.getElementById('signupSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
         }
 
         function hideSignupSuccess() {
             document.getElementById('signupSuccess').classList.add('hidden');
         }
 
-        // ---- Toast ----
-        function showToast(message, type = 'info', duration = 4000) {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            const icons = {
-                success: 'fa-check-circle',
-                error: 'fa-exclamation-circle',
-                warning: 'fa-exclamation-triangle',
-                info: 'fa-info-circle'
-            };
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                if (toast.parentElement) toast.remove();
-            }, duration);
-        }
-
-        // ---- Signup ----
         async function submitSignup() {
             const name = document.getElementById('signupName').value.trim();
             const phone = document.getElementById('signupPhone').value.trim();
@@ -1483,32 +1754,70 @@
                 return;
             }
 
-            const btn = document.querySelector('#signupForm button[type="submit"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
-            btn.disabled = true;
+            const signupBtn = document.querySelector('#signupForm button[type="submit"]');
+            const originalText = signupBtn.innerHTML;
+            signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Account...';
+            signupBtn.disabled = true;
 
             try {
-                const rowData = [name, phone, gmail || '', new Date().toISOString().split('T')[0]];
+                const rowData = [
+                    name, phone, gmail || '',
+                    new Date().toISOString().split('T')[0]
+                ];
                 const result = await api.addRow('registration', rowData);
                 if (result && (result.success || result.includes?.('Success'))) {
                     showSignupSuccess('Account created successfully! Please contact admin for login credentials.');
                     document.getElementById('signupForm').reset();
                     hideSignupError();
                 } else {
-                    throw new Error(result?.error || 'Unknown error');
+                    throw new Error(result?.error || 'Unknown error occurred');
                 }
             } catch (error) {
+                console.error('Signup error:', error);
                 showSignupError('Registration failed: ' + error.message);
             } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                signupBtn.innerHTML = originalText;
+                signupBtn.disabled = false;
             }
         }
 
-        function preloadCriticalData() {
+        function showNotification(message, type = 'info', duration = 5000) {
+            const notification = document.createElement('div');
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-indigo-500'
+            };
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+
+            notification.className = `fixed top-24 right-4 ${colors[type] || colors.info} text-white p-4 rounded-xl shadow-lg z-50 max-w-sm animate-slideIn`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${icons[type] || icons.info} mr-3"></i>
+                    <span class="flex-1">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentElement) notification.remove();
+            }, duration);
+        }
+
+        async function preloadCriticalData() {
             if (currentUser) {
-                api.getBatchSheets(['user_credentials', 'transaction_master']);
+                const criticalSheets = ['user_credentials', 'transaction_master'];
+                api.getBatchSheets(criticalSheets);
             }
         }
 
@@ -1516,7 +1825,7 @@
             if (currentUser) preloadCriticalData();
         }, 2 * 60 * 1000);
 
-        console.log('%c📊 Transaction Manager Loaded!', 'color:#4F46E5;font-size:16px;font-weight:bold;');
+        console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #4f46e5; font-size: 16px; font-weight: bold;');
     </script>
 </body>
 </html>
