@@ -1,17 +1,22 @@
-// =============================
-// 🌐 GLOBAL VARIABLES
-// =============================
+// 🌐 Global Variables
 let currentUser = null;
 let currentPage = 'adminTransactions';
 let currentEditTransaction = null;
-let currentEditUserTransaction = null;
+let currentUserEdit = null;
+
+// Cache for better performance
+let dataCache = {
+    users: null,
+    transactions: null,
+    lastUpdated: null
+};
 
 // =============================
-// 📊 GOOGLE SHEETS API
+// 📊 Google Sheets Integration
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbwByREwBLJdWx2Mxe6s97fNSNCxnHgLleyqdQ5o5-b5L5HeEeoSa1RM2ocof2Z-HYpyzw/exec";
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbzlnFGCvLlQXdLKHfAp-KHJ4WMb-D1nFbgVoOJ8RDrEWGwwuGpjc5whjGk82-bHl3UEEg/exec";
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -21,13 +26,17 @@ class GoogleSheetsAPI {
         try {
             const cached = localStorage.getItem('transaction_cache');
             return cached ? JSON.parse(cached) : {};
-        } catch { return {}; }
+        } catch {
+            return {};
+        }
     }
 
     saveLocalCache() {
         try {
             localStorage.setItem('transaction_cache', JSON.stringify(this.localCache));
-        } catch (e) { console.warn('Cache save failed:', e); }
+        } catch (e) {
+            console.warn('Failed to save cache:', e);
+        }
     }
 
     async getSheet(sheetName, useCache = true) {
@@ -36,7 +45,9 @@ class GoogleSheetsAPI {
 
         if (useCache && this.cache.has(cacheKey)) {
             const cached = this.cache.get(cacheKey);
-            if (now - cached.timestamp < this.cacheTimeout) return cached.data;
+            if (now - cached.timestamp < this.cacheTimeout) {
+                return cached.data;
+            }
         }
 
         if (useCache && this.localCache[cacheKey]) {
@@ -49,8 +60,14 @@ class GoogleSheetsAPI {
 
         try {
             const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${now}`;
-            const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
             const data = await response.json();
 
             const cacheData = { data, timestamp: now };
@@ -59,6 +76,7 @@ class GoogleSheetsAPI {
                 this.localCache[cacheKey] = cacheData;
                 this.saveLocalCache();
             }
+
             return data;
         } catch (error) {
             console.error(`Error fetching ${sheetName}:`, error);
@@ -70,7 +88,9 @@ class GoogleSheetsAPI {
         const promises = sheetNames.map(name => this.getSheet(name));
         const results = await Promise.all(promises);
         const batchResult = {};
-        sheetNames.forEach((name, index) => { batchResult[name] = results[index]; });
+        sheetNames.forEach((name, index) => {
+            batchResult[name] = results[index];
+        });
         return batchResult;
     }
 
@@ -85,12 +105,18 @@ class GoogleSheetsAPI {
             const response = await fetch(this.apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ sheet: sheetName, data: JSON.stringify(row) })
+                body: new URLSearchParams({
+                    sheet: sheetName,
+                    data: JSON.stringify(row)
+                })
             });
+
             const result = await response.json();
+
             this.cache.delete(sheetName);
             delete this.localCache[sheetName];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
@@ -107,10 +133,13 @@ class GoogleSheetsAPI {
                     data: JSON.stringify([username, newPassword])
                 })
             });
+
             const result = await response.json();
+
             this.cache.delete("user_credentials");
             delete this.localCache["user_credentials"];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
@@ -120,6 +149,7 @@ class GoogleSheetsAPI {
     async uploadFile(username, transactionId, file) {
         try {
             const base64Data = await this.fileToBase64(file);
+
             const payload = {
                 sheet: 'uploads',
                 action: 'uploadFile',
@@ -129,15 +159,21 @@ class GoogleSheetsAPI {
                 fileType: file.type,
                 fileData: base64Data
             };
+
             const response = await fetch(this.apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ data: JSON.stringify(payload) })
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
             });
+
             const result = await response.json();
+
             this.cache.delete('uploads');
             delete this.localCache['uploads'];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
@@ -148,7 +184,10 @@ class GoogleSheetsAPI {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => { resolve(reader.result.split(',')[1]); };
+            reader.onload = () => {
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
             reader.onerror = (error) => reject(error);
         });
     }
@@ -164,41 +203,54 @@ class GoogleSheetsAPI {
                 billUrl: billUrl,
                 date: date
             };
+
             const response = await fetch(this.apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ data: JSON.stringify(payload) })
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
             });
+
             const result = await response.json();
+
             this.cache.delete('transaction_master');
             delete this.localCache['transaction_master'];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
         }
     }
 
-    async updateUserTransaction(username, transactionId, status, amount, date) {
+    async updateUserTransaction(username, transactionId, mode, status, amount, date) {
         try {
             const payload = {
                 action: 'updateUserTransaction',
                 username: username,
                 transactionId: transactionId,
+                mode: mode,
                 status: status,
                 amount: amount,
                 date: date
             };
+
             const response = await fetch(this.apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ data: JSON.stringify(payload) })
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
             });
+
             const result = await response.json();
+
             const cacheKey = `${username}_transactions`;
             this.cache.delete(cacheKey);
             delete this.localCache[cacheKey];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
@@ -208,17 +260,24 @@ class GoogleSheetsAPI {
     async getUserTransactions(username) {
         try {
             const cacheKey = `${username}_transactions`;
+            
             if (this.cache.has(cacheKey)) {
                 const cached = this.cache.get(cacheKey);
-                if (Date.now() - cached.timestamp < this.cacheTimeout) return cached.data;
+                if (Date.now() - cached.timestamp < this.cacheTimeout) {
+                    return cached.data;
+                }
             }
+
             const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
             const data = await response.json();
+            
             const cacheData = { data, timestamp: Date.now() };
             this.cache.set(cacheKey, cacheData);
             this.localCache[cacheKey] = cacheData;
             this.saveLocalCache();
+
             return data;
         } catch (error) {
             console.error(`Error fetching user transactions:`, error);
@@ -226,34 +285,70 @@ class GoogleSheetsAPI {
         }
     }
 
-    async addUser(username, fullName, password, role = 'user') {
+    async addUser(username, password, fullName, role) {
         try {
             const payload = {
                 action: 'addUser',
                 username: username,
-                fullName: fullName,
                 password: password,
-                role: role
+                fullName: fullName,
+                role: role || 'user'
             };
+
             const response = await fetch(this.apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ data: JSON.stringify(payload) })
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
             });
+
             const result = await response.json();
+
             this.cache.delete('user_credentials');
             delete this.localCache['user_credentials'];
             this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
         }
     }
 
-    async syncTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date) {
+    async updateUser(username, fullName, role, newPassword) {
         try {
             const payload = {
-                action: 'syncTransactionToAllUsers',
+                action: 'updateUser',
+                username: username,
+                fullName: fullName,
+                role: role,
+                newPassword: newPassword || ''
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
+            });
+
+            const result = await response.json();
+
+            this.cache.delete('user_credentials');
+            delete this.localCache['user_credentials'];
+            this.saveLocalCache();
+
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    async addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date) {
+        try {
+            const payload = {
+                action: 'addTransactionToAllUsers',
                 transactionId: transactionId,
                 title: title,
                 mode: mode,
@@ -261,22 +356,21 @@ class GoogleSheetsAPI {
                 billUrl: billUrl,
                 date: date
             };
+
             const response = await fetch(this.apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ data: JSON.stringify(payload) })
+                body: new URLSearchParams({
+                    data: JSON.stringify(payload)
+                })
             });
+
             const result = await response.json();
-            // Clear all user transaction caches
-            const users = await this.getSheet('user_credentials');
-            if (users && Array.isArray(users)) {
-                users.forEach(u => {
-                    const key = `${u.username}_transactions`;
-                    this.cache.delete(key);
-                    delete this.localCache[key];
-                });
-                this.saveLocalCache();
-            }
+
+            this.cache.clear();
+            this.localCache = {};
+            this.saveLocalCache();
+
             return result;
         } catch (error) {
             return { error: error.message };
@@ -287,7 +381,7 @@ class GoogleSheetsAPI {
 const api = new GoogleSheetsAPI();
 
 // =============================
-// 🔑 AUTHENTICATION
+// 🔑 Authentication
 // =============================
 async function login() {
     const username = document.getElementById('username').value.trim();
@@ -305,10 +399,12 @@ async function login() {
 
     try {
         const users = await api.getSheet("user_credentials", false);
+
         if (!users || users.error || !Array.isArray(users)) {
             showError('Failed to fetch user data');
             return;
         }
+
         const user = users.find(u => u.username === username && u.password === password);
 
         if (user) {
@@ -358,6 +454,7 @@ function logout() {
     sessionStorage.removeItem('transaction_session');
     currentUser = null;
     api.clearCache();
+    
     document.getElementById('loginPage').classList.remove('hidden');
     document.getElementById('dashboardContainer').classList.add('hidden');
     document.getElementById('username').value = '';
@@ -368,27 +465,42 @@ function logout() {
 }
 
 // =============================
-// 📍 NAVIGATION
+// 📍 Navigation
 // =============================
 async function showPage(page) {
     document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active-admin', 'active-user');
+    });
 
-    const pageEl = document.getElementById(page + 'Page');
-    if (pageEl) pageEl.classList.remove('hidden');
+    document.getElementById(page + 'Page').classList.remove('hidden');
 
-    const tabBtn = document.querySelector(`.nav-tab[data-page="${page}"]`);
-    if (tabBtn) tabBtn.classList.add('active');
+    const clickedBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => {
+        const btnText = btn.textContent.toLowerCase();
+        return btnText.includes(page.replace('admin', '').replace('user', '').toLowerCase());
+    });
+
+    if (clickedBtn) {
+        if (currentUser && currentUser.role === 'admin') {
+            clickedBtn.classList.add('active-admin');
+        } else {
+            clickedBtn.classList.add('active-user');
+        }
+    }
 
     currentPage = page;
 
-    if (page === 'adminTransactions') await loadAdminTransactions();
-    else if (page === 'adminUsers') await loadAdminUsers();
-    else if (page === 'userTransactions') await loadUserTransactions();
+    if (page === 'adminTransactions') {
+        await loadAdminTransactions();
+    } else if (page === 'adminUsers') {
+        await loadAdminUsers();
+    } else if (page === 'userTransactions') {
+        await loadUserTransactions();
+    }
 }
 
 // =============================
-// 👨‍💼 ADMIN FUNCTIONS
+// 👨‍💼 Admin Functions
 // =============================
 async function loadAdminData() {
     try {
@@ -400,81 +512,100 @@ async function loadAdminData() {
 
 async function loadAdminTransactions() {
     const container = document.getElementById('adminTransactionsList');
-    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-muted">Loading transactions...</p></div>';
+    container.innerHTML = `
+        <div class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
+            <p class="mt-3 text-gray-500">Loading transactions...</p>
+        </div>
+    `;
 
     try {
         const transactions = await api.getSheet('transaction_master');
+
         if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exchange-alt"></i>
-                    <h3>No transactions found</h3>
-                    <p>Click "Add Transaction" to create one.</p>
+                    <h3>No Transactions</h3>
+                    <p>Click "Add Transaction" to create your first transaction.</p>
                 </div>
             `;
             return;
         }
 
-        const sorted = transactions.sort((a, b) => {
+        const sortedTransactions = transactions.sort((a, b) => {
             const dateA = new Date(a.date || a.transaction_date || 0);
             const dateB = new Date(b.date || b.transaction_date || 0);
             return dateB - dateA;
         });
 
-        const html = sorted.map(t => {
-            const mode = t.mode || 'to get';
-            const modeClass = mode === 'to get' ? 'get' : 'give';
-            const icon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
-            const amount = t.amount || 0;
-            const dateStr = t.date || t.transaction_date || 'N/A';
+        const html = sortedTransactions.map(transaction => {
+            const mode = transaction.mode || 'to get';
+            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            const amount = transaction.amount || '0';
+            
+            const dateStr = transaction.date || transaction.transaction_date || 'N/A';
             const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
-                year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             }) : 'N/A';
-            const tid = t.transaction_id || t.id;
+
+            const billLink = transaction.bill_url ? 
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
+                '<span class="text-gray-400 text-sm">No bill uploaded</span>';
 
             return `
-                <div class="tx-card" onclick="toggleTxDetails('${tid}')">
-                    <div class="tx-header">
-                        <div class="tx-left">
-                            <div class="tx-icon ${modeClass}"><i class="fas ${icon}"></i></div>
-                            <div class="tx-info">
-                                <div class="tx-title">${t.title || 'Untitled'}</div>
-                                <div class="tx-meta">${formattedDate} • ₹${amount}</div>
+                <div class="transaction-card">
+                    <div class="transaction-header" onclick="toggleTransactionDetails('${transaction.transaction_id || transaction.id}')">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
                             </div>
                         </div>
-                        <div class="tx-right">
-                            <span class="badge badge-${modeClass}">${mode}</span>
-                            <i class="fas fa-chevron-down tx-expand" id="tx-arrow-${tid}"></i>
+                        <div class="flex items-center space-x-3 flex-shrink-0">
+                            <span class="mode-badge ${modeClass}">${mode}</span>
+                            <span class="font-bold text-gray-700">₹${amount}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${transaction.transaction_id || transaction.id}"></i>
                         </div>
                     </div>
-                    <div class="tx-details" id="tx-details-${tid}">
-                        <div class="tx-details-grid">
-                            <div class="tx-detail-item">
-                                <div class="label">Transaction ID</div>
-                                <div class="value">${tid}</div>
+                    
+                    <div class="details-container" id="details-${transaction.transaction_id || transaction.id}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="detail-label">Transaction ID</div>
+                                    <div class="detail-value">${transaction.transaction_id || transaction.id || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Mode</div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Amount</div>
+                                    <div class="detail-value font-bold">₹${amount}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Date & Time</div>
+                                    <div class="detail-value">${formattedDate}</div>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <div class="detail-label">Bill</div>
+                                    <div class="detail-value">${billLink}</div>
+                                </div>
                             </div>
-                            <div class="tx-detail-item">
-                                <div class="label">Mode</div>
-                                <div class="value"><span class="badge badge-${modeClass}">${mode}</span></div>
+                            <div class="mt-4 flex gap-2">
+                                <button onclick="event.stopPropagation(); openEditTransactionModal('${transaction.transaction_id || transaction.id}')" class="edit-btn">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
                             </div>
-                            <div class="tx-detail-item">
-                                <div class="label">Amount</div>
-                                <div class="value">₹${amount}</div>
-                            </div>
-                            <div class="tx-detail-item">
-                                <div class="label">Date</div>
-                                <div class="value">${formattedDate}</div>
-                            </div>
-                            <div class="tx-detail-item" style="grid-column:1/-1;">
-                                <div class="label">Bill</div>
-                                <div class="value">${t.bill_url ? `<a href="${t.bill_url}" target="_blank" class="text-primary hover:underline"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 'No bill uploaded'}</div>
-                            </div>
-                        </div>
-                        <div class="mt-3 flex gap-2">
-                            <button onclick="event.stopPropagation(); openEditTransactionModal('${tid}')" class="btn-warning" style="padding:0.4rem 1rem;font-size:0.8rem;">
-                                <i class="fas fa-edit mr-1"></i>Edit
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -482,76 +613,115 @@ async function loadAdminTransactions() {
         }).join('');
 
         container.innerHTML = html;
+
     } catch (error) {
         console.error('Error loading admin transactions:', error);
-        container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Error loading transactions.</p></div>';
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                <p>Error loading transactions. Please try again.</p>
+            </div>
+        `;
     }
 }
 
-function toggleTxDetails(id) {
-    const details = document.getElementById(`tx-details-${id}`);
-    const arrow = document.getElementById(`tx-arrow-${id}`);
-    if (details) {
-        details.classList.toggle('open');
-        if (arrow) arrow.classList.toggle('open');
+function toggleTransactionDetails(id) {
+    const container = document.getElementById(`details-${id}`);
+    const arrow = document.getElementById(`arrow-${id}`);
+
+    if (container && arrow) {
+        if (!container.classList.contains('expanded')) {
+            document.querySelectorAll('.details-container.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+            document.querySelectorAll('.expand-arrow.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+
+            container.classList.add('expanded');
+            arrow.classList.add('expanded');
+        } else {
+            container.classList.remove('expanded');
+            arrow.classList.remove('expanded');
+        }
     }
 }
 
 async function loadAdminUsers() {
     const container = document.getElementById('adminUsersList');
-    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-muted">Loading users...</p></div>';
+    container.innerHTML = `
+        <div class="text-center py-12 col-span-full">
+            <i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i>
+            <p class="mt-3 text-gray-500">Loading users...</p>
+        </div>
+    `;
 
     try {
         const users = await api.getSheet('user_credentials');
+
         if (!users || users.error || !Array.isArray(users) || users.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="grid-column:1/-1;">
+                <div class="empty-state col-span-full">
                     <i class="fas fa-users"></i>
-                    <h3>No users found</h3>
-                    <p>Click "Add User" to create one.</p>
+                    <h3>No Users</h3>
+                    <p>Click "Add User" to create your first user.</p>
                 </div>
             `;
             return;
         }
 
         const allTransactions = await api.getSheet('transaction_master');
-        const txMap = {};
+        const transactionMap = {};
         if (allTransactions && Array.isArray(allTransactions)) {
-            allTransactions.forEach(t => { txMap[t.transaction_id || t.id] = t; });
+            allTransactions.forEach(t => {
+                transactionMap[t.transaction_id || t.id] = t;
+            });
         }
 
         const userPromises = users.map(async (user) => {
-            const userTx = await api.getUserTransactions(user.username);
-            return { ...user, transactions: userTx && Array.isArray(userTx) ? userTx : [] };
+            const userTransactions = await api.getUserTransactions(user.username);
+            return {
+                ...user,
+                transactions: userTransactions && Array.isArray(userTransactions) ? userTransactions : []
+            };
         });
 
-        const usersWithTx = await Promise.all(userPromises);
+        const usersWithTransactions = await Promise.all(userPromises);
 
-        const html = usersWithTx.map(user => {
+        const html = usersWithTransactions.map(user => {
             const initials = user.full_name ? 
                 user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 
                 user.username.substring(0, 2).toUpperCase();
 
-            const txItems = user.transactions.map(t => {
-                const master = txMap[t.transaction_id];
-                const title = master ? master.title : 'Unknown';
-                const mode = master ? master.mode : 'to get';
+            const transactionItems = user.transactions.map(t => {
+                const transaction = transactionMap[t.transaction_id];
+                const title = transaction ? transaction.title : 'Unknown';
                 const status = t.status || 'pending';
-                const statusClass = status === 'completed' ? 'completed' : status === 'no' ? 'no' : status === 'to get' ? 'get' : 'give';
+                const statusClass = status === 'completed' ? 'status-completed' : 
+                                   status === 'cancelled' ? 'status-cancelled' : 'status-pending';
+                const mode = t.mode || transaction?.mode || 'to get';
+                const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
                 const amount = t.amount || 0;
+                const amountClass = mode === 'to get' ? 'get' : 'give';
 
                 return `
-                    <div class="user-tx-item">
-                        <div class="tx-info">
-                            <div class="font-medium text-sm">${title}</div>
-                            <div class="text-xs text-muted">${t.date || 'N/A'}</div>
+                    <div class="user-transaction-item">
+                        <div class="flex justify-between items-center">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-gray-800">${title}</div>
+                                <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                    <span class="mode-badge ${modeClass} text-xs">${mode}</span>
+                                    <span class="status-badge ${statusClass}">${status}</span>
+                                    <span class="text-sm text-gray-500">${t.date || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                ${amount > 0 ? `<div class="transaction-amount ${amountClass}">₹${amount}</div>` : ''}
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="badge badge-${statusClass}">${status}</span>
-                            ${amount > 0 ? `<span class="font-bold text-sm">₹${amount}</span>` : ''}
-                            <button onclick="event.stopPropagation(); openEditUserTransactionModal('${user.username}','${t.transaction_id}')" 
-                                    class="btn-warning" style="padding:0.2rem 0.5rem;font-size:0.65rem;">
-                                <i class="fas fa-edit"></i>
+                        <div class="mt-2">
+                            <button onclick="event.stopPropagation(); openUserTransactionEditModal('${user.username}', '${t.transaction_id}')" class="edit-btn text-xs">
+                                <i class="fas fa-edit mr-1"></i>Edit
                             </button>
                         </div>
                     </div>
@@ -559,40 +729,73 @@ async function loadAdminUsers() {
             }).join('');
 
             return `
-                <div class="user-card" onclick="toggleUserExpand('${user.username}')">
-                    <div class="user-header">
-                        <div class="user-avatar-lg">${initials}</div>
-                        <div style="flex:1;min-width:0;">
-                            <div class="user-name">${user.full_name || user.username}</div>
-                            <div class="user-username">@${user.username} • ${user.transactions.length} tx</div>
+                <div class="user-card" id="user-card-${user.username}" onclick="toggleUserExpand('${user.username}')">
+                    <div class="user-card-inner">
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-name">${user.full_name || user.username}</div>
+                        <div class="user-username">@${user.username}</div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            ${user.role === 'admin' ? '👑 Admin' : '👤 User'} · ${user.transactions.length} transactions
                         </div>
-                        <i class="fas fa-chevron-down user-expand-icon" id="user-expand-${user.username}"></i>
+                        <div class="mt-3 flex justify-center gap-2">
+                            <button onclick="event.stopPropagation(); openEditUserModal('${user.username}')" class="edit-btn text-xs">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <i class="fas fa-chevron-down expand-toggle-icon" id="expand-icon-${user.username}"></i>
+                        </div>
                     </div>
-                    <div class="user-body" id="user-body-${user.username}">
-                        ${txItems || '<div class="text-center text-muted py-2">No transactions</div>'}
+                    <div class="user-expand-content" id="expand-content-${user.username}">
+                        ${transactionItems || '<div class="text-center text-gray-500 py-4">No transactions for this user</div>'}
                     </div>
                 </div>
             `;
         }).join('');
 
         container.innerHTML = html;
+
     } catch (error) {
         console.error('Error loading admin users:', error);
-        container.innerHTML = '<div class="text-center py-8 text-red-500" style="grid-column:1/-1;"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Error loading users.</p></div>';
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-500 col-span-full">
+                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                <p>Error loading users. Please try again.</p>
+            </div>
+        `;
     }
 }
 
 function toggleUserExpand(username) {
-    const body = document.getElementById(`user-body-${username}`);
-    const icon = document.getElementById(`user-expand-${username}`);
-    if (body) {
-        body.classList.toggle('open');
-        if (icon) icon.classList.toggle('open');
+    const content = document.getElementById(`expand-content-${username}`);
+    const card = document.getElementById(`user-card-${username}`);
+    const icon = document.getElementById(`expand-icon-${username}`);
+
+    if (!content) return;
+
+    if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        card.classList.remove('expanded');
+        if (icon) icon.classList.remove('rotated');
+        return;
     }
+
+    document.querySelectorAll('.user-expand-content.open').forEach(el => {
+        el.classList.remove('open');
+        const parentCard = el.closest('.user-card');
+        if (parentCard) parentCard.classList.remove('expanded');
+        const iconId = el.id.replace('expand-content-', 'expand-icon-');
+        const otherIcon = document.getElementById(iconId);
+        if (otherIcon) otherIcon.classList.remove('rotated');
+    });
+
+    content.classList.add('open');
+    card.classList.add('expanded');
+    if (icon) icon.classList.add('rotated');
 }
 
 // =============================
-// ➕ ADD TRANSACTION
+// ➕ Add Transaction Functions
 // =============================
 async function openAddTransactionModal() {
     const modal = document.getElementById('addTransactionModal');
@@ -618,14 +821,21 @@ function closeAddTransactionModal() {
 async function getNextTransactionId() {
     try {
         const transactions = await api.getSheet('transaction_master');
+
         if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
             return 'TRN001';
         }
+
         const ids = transactions
             .map(t => t.transaction_id || t.id)
             .filter(id => id && id.startsWith('TRN'))
-            .map(id => { const num = parseInt(id.substring(3)); return isNaN(num) ? 0 : num; });
+            .map(id => {
+                const num = parseInt(id.substring(3));
+                return isNaN(num) ? 0 : num;
+            });
+
         if (ids.length === 0) return 'TRN001';
+
         const nextNum = Math.max(...ids) + 1;
         return `TRN${String(nextNum).padStart(3, '0')}`;
     } catch (error) {
@@ -636,6 +846,7 @@ async function getNextTransactionId() {
 
 async function submitAddTransaction(event) {
     event.preventDefault();
+
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
@@ -646,23 +857,26 @@ async function submitAddTransaction(event) {
         const transactionId = document.getElementById('autoTransactionId').value;
         const title = document.getElementById('transactionTitle').value.trim();
         const mode = document.getElementById('transactionMode').value;
-        const amount = parseFloat(document.getElementById('transactionAmount').value);
+        const amount = document.getElementById('transactionAmount').value;
         const date = document.getElementById('transactionDate').value;
         const fileInput = document.getElementById('billUpload');
 
-        if (!title || !mode || isNaN(amount) || amount < 0 || !date) {
-            showAddTransactionError('Please fill in all required fields with valid values');
+        if (!title || !mode || !amount || !date) {
+            showAddTransactionError('Please fill in all required fields');
             return;
         }
 
         let billUrl = '';
+
         if (fileInput.files && fileInput.files.length > 0) {
             const file = fileInput.files[0];
             if (file.size > 5 * 1024 * 1024) {
                 showAddTransactionError('File size must be less than 5MB');
                 return;
             }
+
             const uploadResult = await api.uploadFile('admin', transactionId, file);
+
             if (uploadResult && uploadResult.success) {
                 billUrl = uploadResult.fileUrl || '';
             } else {
@@ -672,14 +886,22 @@ async function submitAddTransaction(event) {
         }
 
         // Add to transaction_master
-        const rowData = [transactionId, title, mode, amount, billUrl, date];
+        const rowData = [
+            transactionId,
+            title,
+            mode,
+            amount,
+            billUrl,
+            date
+        ];
+
         const result = await api.addRow('transaction_master', rowData);
 
         if (result && (result.success || result.message?.includes('Success'))) {
-            // Sync to all users
-            const syncResult = await api.syncTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date);
+            // Add transaction to all users
+            await api.addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date);
             
-            showAddTransactionSuccess('Transaction added and synced to all users!');
+            showAddTransactionSuccess('Transaction added successfully to all users!');
             setTimeout(() => {
                 closeAddTransactionModal();
                 loadAdminTransactions();
@@ -687,6 +909,7 @@ async function submitAddTransaction(event) {
         } else {
             throw new Error(result?.error || 'Failed to add transaction');
         }
+
     } catch (error) {
         console.error('Error adding transaction:', error);
         showAddTransactionError('Error: ' + error.message);
@@ -696,57 +919,69 @@ async function submitAddTransaction(event) {
     }
 }
 
-function showAddTransactionError(msg) {
-    const el = document.getElementById('addTransactionError');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showAddTransactionError(message) {
+    const errorDiv = document.getElementById('addTransactionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
     document.getElementById('addTransactionSuccess').classList.add('hidden');
 }
 
-function showAddTransactionSuccess(msg) {
-    const el = document.getElementById('addTransactionSuccess');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showAddTransactionSuccess(message) {
+    const successDiv = document.getElementById('addTransactionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
     document.getElementById('addTransactionError').classList.add('hidden');
 }
 
 // =============================
-// ✏️ EDIT TRANSACTION (Admin)
+// ✏️ Edit Transaction Functions
 // =============================
 async function openEditTransactionModal(transactionId) {
     const modal = document.getElementById('editTransactionModal');
+    const form = document.getElementById('editTransactionForm');
+    form.reset();
     document.getElementById('editTransactionError').classList.add('hidden');
     document.getElementById('editTransactionSuccess').classList.add('hidden');
 
     try {
         const transactions = await api.getSheet('transaction_master');
-        const t = transactions.find(tx => (tx.transaction_id || tx.id) === transactionId);
-        if (!t) { showToast('Transaction not found!', 'error'); return; }
+        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
 
-        currentEditTransaction = t;
-        document.getElementById('editTransactionId').value = t.transaction_id || t.id;
-        document.getElementById('editTransactionTitle').value = t.title || '';
-        document.getElementById('editTransactionMode').value = t.mode || 'to get';
-        document.getElementById('editTransactionAmount').value = t.amount || 0;
-
-        const dateStr = t.date || t.transaction_date || '';
-        if (dateStr) {
-            const d = new Date(dateStr);
-            const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-            document.getElementById('editTransactionDate').value = local.toISOString().slice(0, 16);
+        if (!transaction) {
+            alert('Transaction not found!');
+            return;
         }
 
-        const billDiv = document.getElementById('editCurrentBill');
-        if (t.bill_url) {
-            billDiv.innerHTML = `<i class="fas fa-file-image text-primary mr-1"></i>Current: <a href="${t.bill_url}" target="_blank" class="text-primary hover:underline">View Bill</a>`;
+        currentEditTransaction = transaction;
+
+        document.getElementById('editTransactionId').value = transaction.transaction_id || transaction.id;
+        document.getElementById('editTransactionTitle').value = transaction.title || '';
+        document.getElementById('editTransactionMode').value = transaction.mode || 'to get';
+        document.getElementById('editTransactionAmount').value = transaction.amount || '';
+
+        const dateStr = transaction.date || transaction.transaction_date || '';
+        if (dateStr) {
+            const date = new Date(dateStr);
+            const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            document.getElementById('editTransactionDate').value = localDateTime.toISOString().slice(0, 16);
+        }
+
+        const currentBillDiv = document.getElementById('editCurrentBill');
+        if (transaction.bill_url) {
+            currentBillDiv.innerHTML = `
+                <p class="text-sm text-gray-600">
+                    <i class="fas fa-file-image mr-1 text-blue-500"></i>
+                    Current bill: <a href="${transaction.bill_url}" target="_blank" class="bill-link">View Bill</a>
+                </p>
+            `;
         } else {
-            billDiv.innerHTML = 'No bill uploaded';
+            currentBillDiv.innerHTML = '<p class="text-sm text-gray-400">No bill currently uploaded</p>';
         }
 
         modal.classList.remove('hidden');
     } catch (error) {
-        console.error('Error opening edit:', error);
-        showToast('Error loading transaction details', 'error');
+        console.error('Error opening edit transaction:', error);
+        alert('Error loading transaction details. Please try again.');
     }
 }
 
@@ -757,6 +992,7 @@ function closeEditTransactionModal() {
 
 async function submitEditTransaction(event) {
     event.preventDefault();
+
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
@@ -767,23 +1003,26 @@ async function submitEditTransaction(event) {
         const transactionId = document.getElementById('editTransactionId').value;
         const title = document.getElementById('editTransactionTitle').value.trim();
         const mode = document.getElementById('editTransactionMode').value;
-        const amount = parseFloat(document.getElementById('editTransactionAmount').value);
+        const amount = document.getElementById('editTransactionAmount').value;
         const date = document.getElementById('editTransactionDate').value;
         const fileInput = document.getElementById('editBillUpload');
 
-        if (!title || !mode || isNaN(amount) || amount < 0 || !date) {
+        if (!title || !mode || !amount || !date) {
             showEditTransactionError('Please fill in all required fields');
             return;
         }
 
         let billUrl = currentEditTransaction?.bill_url || '';
+
         if (fileInput.files && fileInput.files.length > 0) {
             const file = fileInput.files[0];
             if (file.size > 5 * 1024 * 1024) {
                 showEditTransactionError('File size must be less than 5MB');
                 return;
             }
+
             const uploadResult = await api.uploadFile('admin', transactionId, file);
+
             if (uploadResult && uploadResult.success) {
                 billUrl = uploadResult.fileUrl || '';
             } else {
@@ -793,6 +1032,7 @@ async function submitEditTransaction(event) {
         }
 
         const result = await api.updateTransaction(transactionId, title, mode, amount, billUrl, date);
+
         if (result && result.success) {
             showEditTransactionSuccess('Transaction updated successfully!');
             setTimeout(() => {
@@ -802,6 +1042,7 @@ async function submitEditTransaction(event) {
         } else {
             throw new Error(result?.error || 'Failed to update transaction');
         }
+
     } catch (error) {
         console.error('Error updating transaction:', error);
         showEditTransactionError('Error: ' + error.message);
@@ -811,66 +1052,234 @@ async function submitEditTransaction(event) {
     }
 }
 
-function showEditTransactionError(msg) {
-    const el = document.getElementById('editTransactionError');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showEditTransactionError(message) {
+    const errorDiv = document.getElementById('editTransactionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
     document.getElementById('editTransactionSuccess').classList.add('hidden');
 }
 
-function showEditTransactionSuccess(msg) {
-    const el = document.getElementById('editTransactionSuccess');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showEditTransactionSuccess(message) {
+    const successDiv = document.getElementById('editTransactionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
     document.getElementById('editTransactionError').classList.add('hidden');
 }
 
 // =============================
-// ✏️ EDIT USER TRANSACTION (Admin)
+// 👤 User Functions
 // =============================
-async function openEditUserTransactionModal(username, transactionId) {
-    const modal = document.getElementById('editUserTransactionModal');
-    document.getElementById('editUserTxnError').classList.add('hidden');
-    document.getElementById('editUserTxnSuccess').classList.add('hidden');
+async function loadUserTransactions() {
+    const container = document.getElementById('userTransactionsList');
+    container.innerHTML = `
+        <div class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-3xl text-cyan-500"></i>
+            <p class="mt-3 text-gray-500">Loading transactions...</p>
+        </div>
+    `;
 
     try {
-        const userTx = await api.getUserTransactions(username);
-        const t = userTx.find(tx => tx.transaction_id === transactionId);
-        if (!t) { showToast('User transaction not found!', 'error'); return; }
+        const transactions = await api.getSheet('transaction_master');
 
-        const master = await api.getSheet('transaction_master');
-        const masterTx = master.find(m => (m.transaction_id || m.id) === transactionId);
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exchange-alt"></i>
+                    <h3>No Transactions</h3>
+                    <p>There are no transactions available yet.</p>
+                </div>
+            `;
+            return;
+        }
 
-        currentEditUserTransaction = { username, transactionId, data: t };
+        const userTransactions = await api.getUserTransactions(currentUser.username);
+        const userTransactionMap = {};
+        if (userTransactions && Array.isArray(userTransactions)) {
+            userTransactions.forEach(t => {
+                userTransactionMap[t.transaction_id] = t;
+            });
+        }
 
-        document.getElementById('editUserTxnUsername').value = username;
-        document.getElementById('editUserTxnTitle').value = masterTx ? masterTx.title : 'Unknown';
-        document.getElementById('editUserTxnId').value = transactionId;
-        document.getElementById('editUserTxnMode').value = masterTx ? masterTx.mode : 'to get';
-        document.getElementById('editUserTxnStatus').value = t.status || 'pending';
-        document.getElementById('editUserTxnAmount').value = t.amount || 0;
+        const sortedTransactions = transactions.sort((a, b) => {
+            const dateA = new Date(a.date || a.transaction_date || 0);
+            const dateB = new Date(b.date || b.transaction_date || 0);
+            return dateB - dateA;
+        });
 
-        const dateStr = t.date || '';
+        const html = sortedTransactions.map(transaction => {
+            const tid = transaction.transaction_id || transaction.id;
+            const userTxn = userTransactionMap[tid];
+            const status = userTxn?.status || 'pending';
+            const amount = userTxn?.amount || transaction.amount || '0';
+            
+            const mode = userTxn?.mode || transaction.mode || 'to get';
+            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            
+            const statusClass = status === 'completed' ? 'status-completed' : 
+                               status === 'cancelled' ? 'status-cancelled' : 'status-pending';
+            
+            const dateStr = transaction.date || transaction.transaction_date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ? 
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
+                '<span class="text-gray-400 text-sm">No bill uploaded</span>';
+
+            return `
+                <div class="transaction-card" onclick="toggleUserTransactionDetails('${tid}')">
+                    <div class="transaction-header">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 flex-shrink-0">
+                            ${status !== 'pending' ? `<span class="status-badge ${statusClass}">${status}</span>` : ''}
+                            ${amount > 0 ? `<span class="transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
+                            <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="details-container" id="user-details-${tid}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="detail-label">Transaction ID</div>
+                                    <div class="detail-value">${tid}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Mode</div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Amount</div>
+                                    <div class="detail-value font-bold">₹${amount}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Date & Time</div>
+                                    <div class="detail-value">${formattedDate}</div>
+                                </div>
+                                ${status !== 'pending' ? `
+                                    <div>
+                                        <div class="detail-label">Status</div>
+                                        <div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div>
+                                    </div>
+                                    <div>
+                                        <div class="detail-label">Updated</div>
+                                        <div class="detail-value">${userTxn?.date || 'N/A'}</div>
+                                    </div>
+                                ` : ''}
+                                <div class="md:col-span-2">
+                                    <div class="detail-label">Bill</div>
+                                    <div class="detail-value">${billLink}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading user transactions:', error);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                <p>Error loading transactions. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+function toggleUserTransactionDetails(id) {
+    const container = document.getElementById(`user-details-${id}`);
+    const arrow = document.getElementById(`user-arrow-${id}`);
+
+    if (container && arrow) {
+        if (!container.classList.contains('expanded')) {
+            document.querySelectorAll('.details-container.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+            document.querySelectorAll('.expand-arrow.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+
+            container.classList.add('expanded');
+            arrow.classList.add('expanded');
+        } else {
+            container.classList.remove('expanded');
+            arrow.classList.remove('expanded');
+        }
+    }
+}
+
+// =============================
+// ✏️ User Transaction Edit (Admin)
+// =============================
+async function openUserTransactionEditModal(username, transactionId) {
+    const modal = document.getElementById('userTransactionEditModal');
+    const form = document.getElementById('userTransactionEditForm');
+    form.reset();
+    document.getElementById('userEditError').classList.add('hidden');
+    document.getElementById('userEditSuccess').classList.add('hidden');
+
+    try {
+        const userTransactions = await api.getUserTransactions(username);
+        const userTxn = userTransactions.find(t => t.transaction_id === transactionId);
+
+        if (!userTxn) {
+            alert('User transaction not found!');
+            return;
+        }
+
+        const transactions = await api.getSheet('transaction_master');
+        const masterTxn = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+
+        document.getElementById('userEditUsername').value = username;
+        document.getElementById('userEditTransactionTitle').value = masterTxn?.title || 'Unknown';
+        document.getElementById('userEditTransactionId').value = transactionId;
+        document.getElementById('userEditMode').value = userTxn.mode || 'to get';
+        document.getElementById('userEditStatus').value = userTxn.status || 'pending';
+        document.getElementById('userEditAmount').value = userTxn.amount || '';
+
+        const dateStr = userTxn.date || '';
         if (dateStr) {
-            const d = new Date(dateStr);
-            const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-            document.getElementById('editUserTxnDate').value = local.toISOString().slice(0, 16);
+            const date = new Date(dateStr);
+            const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            document.getElementById('userEditDate').value = localDateTime.toISOString().slice(0, 16);
+        } else {
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            document.getElementById('userEditDate').value = localDateTime.toISOString().slice(0, 16);
         }
 
         modal.classList.remove('hidden');
     } catch (error) {
-        console.error('Error opening edit user transaction:', error);
-        showToast('Error loading user transaction', 'error');
+        console.error('Error opening user transaction edit:', error);
+        alert('Error loading transaction details. Please try again.');
     }
 }
 
-function closeEditUserTransactionModal() {
-    document.getElementById('editUserTransactionModal').classList.add('hidden');
-    currentEditUserTransaction = null;
+function closeUserTransactionEditModal() {
+    document.getElementById('userTransactionEditModal').classList.add('hidden');
 }
 
-async function submitEditUserTransaction(event) {
+async function submitUserTransactionEdit(event) {
     event.preventDefault();
+
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
@@ -878,52 +1287,55 @@ async function submitEditUserTransaction(event) {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
         submitBtn.disabled = true;
 
-        const username = document.getElementById('editUserTxnUsername').value;
-        const transactionId = document.getElementById('editUserTxnId').value;
-        const status = document.getElementById('editUserTxnStatus').value;
-        const amount = parseFloat(document.getElementById('editUserTxnAmount').value);
-        const date = document.getElementById('editUserTxnDate').value;
+        const username = document.getElementById('userEditUsername').value;
+        const transactionId = document.getElementById('userEditTransactionId').value;
+        const mode = document.getElementById('userEditMode').value;
+        const status = document.getElementById('userEditStatus').value;
+        const amount = document.getElementById('userEditAmount').value;
+        const date = document.getElementById('userEditDate').value;
 
-        if (!status || isNaN(amount) || amount < 0 || !date) {
-            showEditUserTxnError('Please fill in all required fields');
+        if (!mode || !status || !amount || !date) {
+            showUserEditError('Please fill in all required fields');
             return;
         }
 
-        const result = await api.updateUserTransaction(username, transactionId, status, amount, date);
+        const result = await api.updateUserTransaction(username, transactionId, mode, status, amount, date);
+
         if (result && result.success) {
-            showEditUserTxnSuccess('User transaction updated successfully!');
+            showUserEditSuccess('User transaction updated successfully!');
             setTimeout(() => {
-                closeEditUserTransactionModal();
+                closeUserTransactionEditModal();
                 loadAdminUsers();
             }, 1500);
         } else {
             throw new Error(result?.error || 'Failed to update user transaction');
         }
+
     } catch (error) {
         console.error('Error updating user transaction:', error);
-        showEditUserTxnError('Error: ' + error.message);
+        showUserEditError('Error: ' + error.message);
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     }
 }
 
-function showEditUserTxnError(msg) {
-    const el = document.getElementById('editUserTxnError');
-    el.textContent = msg;
-    el.classList.remove('hidden');
-    document.getElementById('editUserTxnSuccess').classList.add('hidden');
+function showUserEditError(message) {
+    const errorDiv = document.getElementById('userEditError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('userEditSuccess').classList.add('hidden');
 }
 
-function showEditUserTxnSuccess(msg) {
-    const el = document.getElementById('editUserTxnSuccess');
-    el.textContent = msg;
-    el.classList.remove('hidden');
-    document.getElementById('editUserTxnError').classList.add('hidden');
+function showUserEditSuccess(message) {
+    const successDiv = document.getElementById('userEditSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('userEditError').classList.add('hidden');
 }
 
 // =============================
-// ➕ ADD USER (Admin)
+// 👤 Add User Functions
 // =============================
 function openAddUserModal() {
     document.getElementById('addUserModal').classList.remove('hidden');
@@ -938,6 +1350,7 @@ function closeAddUserModal() {
 
 async function submitAddUser(event) {
     event.preventDefault();
+
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
@@ -946,23 +1359,20 @@ async function submitAddUser(event) {
         submitBtn.disabled = true;
 
         const username = document.getElementById('addUserUsername').value.trim();
-        const fullName = document.getElementById('addUserFullName').value.trim();
         const password = document.getElementById('addUserPassword').value.trim();
+        const fullName = document.getElementById('addUserFullName').value.trim();
         const role = document.getElementById('addUserRole').value;
 
-        if (!username || !fullName || !password) {
+        if (!username || !password || !fullName) {
             showAddUserError('Please fill in all required fields');
             return;
         }
 
-        if (password.length < 4) {
-            showAddUserError('Password must be at least 4 characters');
-            return;
-        }
+        const result = await api.addUser(username, password, fullName, role);
 
-        const result = await api.addUser(username, fullName, password, role);
         if (result && result.success) {
             showAddUserSuccess('User added successfully!');
+            document.getElementById('addUserForm').reset();
             setTimeout(() => {
                 closeAddUserModal();
                 loadAdminUsers();
@@ -970,6 +1380,7 @@ async function submitAddUser(event) {
         } else {
             throw new Error(result?.error || 'Failed to add user');
         }
+
     } catch (error) {
         console.error('Error adding user:', error);
         showAddUserError('Error: ' + error.message);
@@ -979,123 +1390,120 @@ async function submitAddUser(event) {
     }
 }
 
-function showAddUserError(msg) {
-    const el = document.getElementById('addUserError');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showAddUserError(message) {
+    const errorDiv = document.getElementById('addUserError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
     document.getElementById('addUserSuccess').classList.add('hidden');
 }
 
-function showAddUserSuccess(msg) {
-    const el = document.getElementById('addUserSuccess');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showAddUserSuccess(message) {
+    const successDiv = document.getElementById('addUserSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
     document.getElementById('addUserError').classList.add('hidden');
 }
 
 // =============================
-// 👤 USER FUNCTIONS
+// ✏️ Edit User Functions
 // =============================
-async function loadUserTransactions() {
-    const container = document.getElementById('userTransactionsList');
-    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-primary"></i><p class="mt-2 text-muted">Loading transactions...</p></div>';
+async function openEditUserModal(username) {
+    const modal = document.getElementById('editUserModal');
+    const form = document.getElementById('editUserForm');
+    form.reset();
+    document.getElementById('editUserError').classList.add('hidden');
+    document.getElementById('editUserSuccess').classList.add('hidden');
 
     try {
-        const transactions = await api.getSheet('transaction_master');
-        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-exchange-alt"></i>
-                    <h3>No transactions available</h3>
-                    <p>Check back later for new transactions.</p>
-                </div>
-            `;
+        const users = await api.getSheet('user_credentials');
+        const user = users.find(u => u.username === username);
+
+        if (!user) {
+            alert('User not found!');
             return;
         }
 
-        const userTx = await api.getUserTransactions(currentUser.username);
-        const userTxMap = {};
-        if (userTx && Array.isArray(userTx)) {
-            userTx.forEach(t => { userTxMap[t.transaction_id] = t; });
-        }
+        document.getElementById('editUserUsername').value = user.username;
+        document.getElementById('editUserFullName').value = user.full_name || '';
+        document.getElementById('editUserRole').value = user.role || 'user';
 
-        const sorted = transactions.sort((a, b) => {
-            const dateA = new Date(a.date || a.transaction_date || 0);
-            const dateB = new Date(b.date || b.transaction_date || 0);
-            return dateB - dateA;
-        });
-
-        const html = sorted.map(t => {
-            const tid = t.transaction_id || t.id;
-            const userT = userTxMap[tid];
-            const status = userT?.status || 'pending';
-            const amount = userT?.amount || 0;
-            const mode = t.mode || 'to get';
-            const modeClass = mode === 'to get' ? 'get' : 'give';
-            const icon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
-            const statusClass = status === 'completed' ? 'completed' : status === 'no' ? 'no' : status === 'to get' ? 'get' : 'give';
-            const dateStr = t.date || t.transaction_date || 'N/A';
-            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
-                year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }) : 'N/A';
-
-            return `
-                <div class="tx-card" onclick="toggleTxDetails('${tid}')">
-                    <div class="tx-header">
-                        <div class="tx-left">
-                            <div class="tx-icon ${modeClass}"><i class="fas ${icon}"></i></div>
-                            <div class="tx-info">
-                                <div class="tx-title">${t.title || 'Untitled'}</div>
-                                <div class="tx-meta">${formattedDate} • ₹${amount}</div>
-                            </div>
-                        </div>
-                        <div class="tx-right">
-                            <span class="badge badge-${statusClass}">${status}</span>
-                            <i class="fas fa-chevron-down tx-expand" id="tx-arrow-${tid}"></i>
-                        </div>
-                    </div>
-                    <div class="tx-details" id="tx-details-${tid}">
-                        <div class="tx-details-grid">
-                            <div class="tx-detail-item">
-                                <div class="label">Transaction ID</div>
-                                <div class="value">${tid}</div>
-                            </div>
-                            <div class="tx-detail-item">
-                                <div class="label">Mode</div>
-                                <div class="value"><span class="badge badge-${modeClass}">${mode}</span></div>
-                            </div>
-                            <div class="tx-detail-item">
-                                <div class="label">Status</div>
-                                <div class="value"><span class="badge badge-${statusClass}">${status}</span></div>
-                            </div>
-                            <div class="tx-detail-item">
-                                <div class="label">Amount</div>
-                                <div class="value">₹${amount}</div>
-                            </div>
-                            <div class="tx-detail-item" style="grid-column:1/-1;">
-                                <div class="label">Bill</div>
-                                <div class="value">${t.bill_url ? `<a href="${t.bill_url}" target="_blank" class="text-primary hover:underline"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 'No bill uploaded'}</div>
-                            </div>
-                            ${userT?.date ? `<div class="tx-detail-item" style="grid-column:1/-1;">
-                                <div class="label">Last Updated</div>
-                                <div class="value">${new Date(userT.date).toLocaleString()}</div>
-                            </div>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        container.innerHTML = html;
+        modal.classList.remove('hidden');
     } catch (error) {
-        console.error('Error loading user transactions:', error);
-        container.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Error loading transactions.</p></div>';
+        console.error('Error opening edit user:', error);
+        alert('Error loading user details. Please try again.');
     }
 }
 
+function closeEditUserModal() {
+    document.getElementById('editUserModal').classList.add('hidden');
+}
+
+async function submitEditUser(event) {
+    event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    try {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+        submitBtn.disabled = true;
+
+        const username = document.getElementById('editUserUsername').value;
+        const fullName = document.getElementById('editUserFullName').value.trim();
+        const role = document.getElementById('editUserRole').value;
+        const newPassword = document.getElementById('editUserPassword').value.trim();
+
+        if (!fullName) {
+            showEditUserError('Please fill in all required fields');
+            return;
+        }
+
+        const result = await api.updateUser(username, fullName, role, newPassword);
+
+        if (result && result.success) {
+            showEditUserSuccess('User updated successfully!');
+            
+            if (username === currentUser.username && newPassword) {
+                showNotification('Password changed. Please login again.', 'warning', 3000);
+                setTimeout(() => {
+                    closeEditUserModal();
+                    logout();
+                }, 3000);
+            } else {
+                setTimeout(() => {
+                    closeEditUserModal();
+                    loadAdminUsers();
+                }, 1500);
+            }
+        } else {
+            throw new Error(result?.error || 'Failed to update user');
+        }
+
+    } catch (error) {
+        console.error('Error updating user:', error);
+        showEditUserError('Error: ' + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function showEditUserError(message) {
+    const errorDiv = document.getElementById('editUserError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('editUserSuccess').classList.add('hidden');
+}
+
+function showEditUserSuccess(message) {
+    const successDiv = document.getElementById('editUserSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('editUserError').classList.add('hidden');
+}
+
 // =============================
-// 🔐 CHANGE PASSWORD
+// 🔐 Change Password Functions
 // =============================
 function openChangePasswordModal() {
     document.getElementById('profileMenu').classList.add('hidden');
@@ -1111,6 +1519,7 @@ function closeChangePasswordModal() {
 
 async function changePassword(event) {
     event.preventDefault();
+
     const currentPassword = document.getElementById('currentPassword').value.trim();
     const newPassword = document.getElementById('newPassword').value.trim();
     const confirmPassword = document.getElementById('confirmPassword').value.trim();
@@ -1126,39 +1535,47 @@ async function changePassword(event) {
         showChangePasswordError('Please fill in all fields');
         return;
     }
+
     if (newPassword.length < 6) {
-        showChangePasswordError('New password must be at least 6 characters');
+        showChangePasswordError('New password must be at least 6 characters long');
         return;
     }
+
     if (newPassword !== confirmPassword) {
-        showChangePasswordError('Passwords do not match');
+        showChangePasswordError('New passwords do not match');
         return;
     }
+
     if (newPassword === currentPassword) {
-        showChangePasswordError('New password must be different');
+        showChangePasswordError('New password must be different from current password');
         return;
     }
 
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Changing...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Changing Password...';
     submitBtn.disabled = true;
 
     try {
         const users = await api.getSheet("user_credentials", false);
+
         if (!users || users.error || !Array.isArray(users)) {
             throw new Error('Failed to fetch user data');
         }
 
-        const user = users.find(u => 
-            String(u.username).toLowerCase().trim() === String(currentUser.username).toLowerCase().trim() &&
-            String(u.password).trim() === String(currentPassword).trim()
-        );
+        const user = users.find(u => {
+            if (!u.username || !u.password) return false;
+            return String(u.username).toLowerCase().trim() === String(currentUser.username).toLowerCase().trim() &&
+                   String(u.password).trim() === String(currentPassword).trim();
+        });
 
-        if (!user) throw new Error('Current password is incorrect');
+        if (!user) {
+            throw new Error('Current password is incorrect');
+        }
 
         const updateResult = await api.updatePassword(currentUser.username, newPassword);
+
         if (updateResult && updateResult.success) {
-            showChangePasswordSuccess('Password changed! Logging out in 3 seconds...');
+            showChangePasswordSuccess('Password changed successfully! You will be logged out in 3 seconds.');
             document.getElementById('changePasswordForm').reset();
             setTimeout(() => {
                 closeChangePasswordModal();
@@ -1167,6 +1584,7 @@ async function changePassword(event) {
         } else {
             throw new Error(updateResult?.error || 'Failed to update password');
         }
+
     } catch (error) {
         console.error('Error changing password:', error);
         showChangePasswordError(error.message);
@@ -1176,20 +1594,20 @@ async function changePassword(event) {
     }
 }
 
-function showChangePasswordError(msg) {
-    const el = document.getElementById('changePasswordError');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showChangePasswordError(message) {
+    const errorDiv = document.getElementById('changePasswordError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
 }
 
-function showChangePasswordSuccess(msg) {
-    const el = document.getElementById('changePasswordSuccess');
-    el.textContent = msg;
-    el.classList.remove('hidden');
+function showChangePasswordSuccess(message) {
+    const successDiv = document.getElementById('changePasswordSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
 }
 
 // =============================
-// 🎯 EVENT LISTENERS
+// 🎯 Event Listeners
 // =============================
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('signupForm').addEventListener('submit', function(e) {
@@ -1204,8 +1622,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('addTransactionForm').addEventListener('submit', submitAddTransaction);
     document.getElementById('editTransactionForm').addEventListener('submit', submitEditTransaction);
-    document.getElementById('editUserTransactionForm').addEventListener('submit', submitEditUserTransaction);
+    document.getElementById('userTransactionEditForm').addEventListener('submit', submitUserTransactionEdit);
     document.getElementById('addUserForm').addEventListener('submit', submitAddUser);
+    document.getElementById('editUserForm').addEventListener('submit', submitEditUser);
     document.getElementById('changePasswordForm').addEventListener('submit', changePassword);
 
     // Close modals on overlay click
@@ -1218,7 +1637,31 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// =============================
-// 🚀 BOOTSTRAP
-// =============================
-console.log('%c📊 Transaction Manager Loaded!', 'color:#4F46E5;font-size:16px;font-weight:bold;');
+// Restore session on load (fallback)
+(function() {
+    const saved = sessionStorage.getItem('transaction_session');
+    if (saved && !currentUser) {
+        try {
+            const data = JSON.parse(saved);
+            if (data.user && data.timestamp && (Date.now() - data.timestamp < 24 * 60 * 60 * 1000)) {
+                currentUser = data.user;
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dashboardContainer').classList.remove('hidden');
+                document.getElementById('welcomeUser').textContent = `Welcome, ${currentUser.name}`;
+                loadUserProfile(currentUser.username);
+                if (currentUser.role === 'admin') {
+                    document.getElementById('userNav').classList.add('hidden');
+                    document.getElementById('adminNav').classList.remove('hidden');
+                    loadAdminData().then(() => showPage('adminTransactions'));
+                } else {
+                    document.getElementById('adminNav').classList.add('hidden');
+                    document.getElementById('userNav').classList.remove('hidden');
+                    loadUserTransactions().then(() => showPage('userTransactions'));
+                }
+                setTimeout(() => preloadCriticalData(), 100);
+            }
+        } catch (e) {}
+    }
+})();
+
+console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #4f46e5; font-size: 16px; font-weight: bold;');
