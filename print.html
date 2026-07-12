@@ -25,6 +25,138 @@
             min-height: 100vh;
         }
 
+        /* ─── LOGIN OVERLAY ──────────────────────────────────────── */
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 43, 74, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.45s ease, visibility 0.45s ease;
+        }
+
+        #loginOverlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 2.8rem 2.8rem 2.8rem;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-card .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #0b2b4a;
+            margin-bottom: 0.2rem;
+        }
+
+        .login-card .subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .login-card .lock-icon {
+            font-size: 2.6rem;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
+
+        .login-card label {
+            display: block;
+            text-align: left;
+            font-weight: 600;
+            color: #0b2b4a;
+            font-size: 0.85rem;
+            margin: 0 0 0.3rem 0.2rem;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border 0.2s;
+            margin-bottom: 1.2rem;
+            background: #fafcff;
+        }
+
+        .login-card input:focus {
+            border-color: #0b2b4a;
+            background: #ffffff;
+        }
+
+        .login-card .login-btn {
+            width: 100%;
+            background: #0b2b4a;
+            border: none;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 0.8rem;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(11, 43, 74, 0.15);
+            letter-spacing: 0.5px;
+        }
+
+        .login-card .login-btn:hover {
+            background: #1e3b5a;
+            transform: scale(1.01);
+        }
+
+        .login-card .login-btn:active {
+            transform: scale(0.97);
+        }
+
+        .login-card .error-msg {
+            color: #b91c1c;
+            background: #fee2e2;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-top: 0.8rem;
+            display: none;
+        }
+
+        .login-card .error-msg.show {
+            display: block;
+        }
+
+        /* ── App Wrapper (hidden until login) ────────────────────── */
         .app-wrapper {
             max-width: 1300px;
             width: 100%;
@@ -32,6 +164,12 @@
             border-radius: 28px;
             box-shadow: 0 15px 40px rgba(11, 43, 74, 0.06);
             padding: 1.8rem 2rem 2.5rem;
+            display: none;
+            /* hidden until login */;
+        }
+
+        .app-wrapper.visible {
+            display: block;
         }
 
         /* ── Header ────────────────────────────────────────────────── */
@@ -58,6 +196,23 @@
             color: #64748b;
             font-size: 0.9rem;
             font-weight: 500;
+        }
+
+        .logout-btn {
+            background: #f1f5f9;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover {
+            background: #e2e8f0;
+            color: #0b2b4a;
         }
 
         /* ── Navbar Tabs ──────────────────────────────────────────── */
@@ -402,11 +557,35 @@
                 width: 100%;
                 justify-content: center;
             }
+            .login-card {
+                padding: 2rem 1.5rem;
+                margin: 0 1rem;
+            }
         }
     </style>
 </head>
 <body>
 
+    <!-- ─── LOGIN OVERLAY ────────────────────────────────────────── -->
+    <div id="loginOverlay">
+        <div class="login-card">
+            <span class="lock-icon">🔐</span>
+            <div class="logo">Nadha</div>
+            <div class="subtitle">Admin · Dashboard</div>
+            <form id="loginForm" autocomplete="off">
+                <label for="usernameInput">Username</label>
+                <input type="text" id="usernameInput" placeholder="Enter username" value="admin" autofocus />
+
+                <label for="passwordInput">Password</label>
+                <input type="password" id="passwordInput" placeholder="Enter password" value="pass" />
+
+                <button type="submit" class="login-btn">Sign In</button>
+                <div class="error-msg" id="loginError">Invalid username or password.</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ─── APP WRAPPER ──────────────────────────────────────────── -->
     <div class="app-wrapper" id="appWrapper">
 
         <!-- ─── HEADER ──────────────────────────────────────────── -->
@@ -415,8 +594,9 @@
                 <h1>Nadha · Admin</h1>
                 <span class="sub">Sheet dashboard &amp; transaction print</span>
             </div>
-            <div style="font-size:0.85rem; color:#64748b;">
-                <span id="currentDate"></span>
+            <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                <span style="font-size:0.85rem; color:#64748b;" id="currentDate"></span>
+                <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
             </div>
         </div>
 
@@ -656,30 +836,35 @@
             };
 
             // ─── STATE ──────────────────────────────────────────────────────────────
-            // Store raw data per sheet
             const dataStore = {
                 credentials: [],
                 registration: [],
                 transaction_master: [],
                 union: [],
-                transactions: [] // combined from 16552 + nasik
+                transactions: []
             };
 
-            // Filtered transactions (for display)
             let filteredTransactions = [];
+            let isLoggedIn = false;
 
             // ─── DOM REFS ────────────────────────────────────────────────────────────
+            const loginOverlay = document.getElementById('loginOverlay');
+            const loginForm = document.getElementById('loginForm');
+            const usernameInput = document.getElementById('usernameInput');
+            const passwordInput = document.getElementById('passwordInput');
+            const loginError = document.getElementById('loginError');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const appWrapper = document.getElementById('appWrapper');
+
             const tabContents = document.querySelectorAll('.tab-content');
             const navTabs = document.querySelectorAll('.nav-tab');
 
-            // Table bodies
             const credBody = document.getElementById('credBody');
             const regBody = document.getElementById('regBody');
             const tmBody = document.getElementById('tmBody');
             const unionBody = document.getElementById('unionBody');
             const txBody = document.getElementById('txBody');
 
-            // Count spans
             const credCount = document.getElementById('credCount');
             const regCount = document.getElementById('regCount');
             const tmCount = document.getElementById('tmCount');
@@ -688,7 +873,6 @@
             const txFilteredCount = document.getElementById('txFilteredCount');
             const txCountBadge = document.getElementById('txCountBadge');
 
-            // Transaction filters
             const txModeFilter = document.getElementById('txModeFilter');
             const txStatusFilter = document.getElementById('txStatusFilter');
             const txApplyFilterBtn = document.getElementById('txApplyFilterBtn');
@@ -697,7 +881,49 @@
 
             const currentDateEl = document.getElementById('currentDate');
 
+            // ─── LOGIN LOGIC ──────────────────────────────────────────────────────────
+
+            function doLogin(username, password) {
+                if (username === 'admin' && password === 'pass') {
+                    isLoggedIn = true;
+                    loginOverlay.classList.add('hidden');
+                    appWrapper.classList.add('visible');
+                    loginError.classList.remove('show');
+                    return true;
+                } else {
+                    loginError.classList.add('show');
+                    return false;
+                }
+            }
+
+            function doLogout() {
+                isLoggedIn = false;
+                appWrapper.classList.remove('visible');
+                loginOverlay.classList.remove('hidden');
+                loginError.classList.remove('show');
+                usernameInput.value = 'admin';
+                passwordInput.value = 'pass';
+                setTimeout(() => usernameInput.focus(), 100);
+            }
+
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const user = usernameInput.value.trim();
+                const pass = passwordInput.value.trim();
+                doLogin(user, pass);
+            });
+
+            logoutBtn.addEventListener('click', doLogout);
+
+            // Enter key on password field triggers submit
+            passwordInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    loginForm.dispatchEvent(new Event('submit'));
+                }
+            });
+
             // ─── HELPERS ──────────────────────────────────────────────────────────────
+
             function escapeHTML(str) {
                 if (str === undefined || str === null) return '';
                 return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } [m] ||
@@ -921,7 +1147,6 @@
 
                 Promise.all(promises)
                     .then(results => {
-                        // combine transactions
                         const tx16552 = results[4] || [];
                         const txNasik = results[5] || [];
                         const combined = [...tx16552, ...txNasik];
@@ -931,7 +1156,6 @@
                     })
                     .catch(err => {
                         console.error('Load error:', err);
-                        // show error in transaction table
                         txBody.innerHTML =
                             `<tr><td colspan="8" class="empty-message">⚠️ Failed to load transaction sheets.</td></tr>`;
                     });
@@ -940,11 +1164,9 @@
             // ─── NAVIGATION ──────────────────────────────────────────────────────────
 
             function switchTab(tabId) {
-                // update nav buttons
                 navTabs.forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.tab === tabId);
                 });
-                // update content
                 tabContents.forEach(el => {
                     el.classList.toggle('active', el.id === tabId);
                 });
@@ -973,6 +1195,10 @@
                 txModeFilter.value = 'all';
                 txStatusFilter.value = 'all';
                 applyTransactionFilters();
+            });
+
+            [txModeFilter, txStatusFilter].forEach(el => {
+                el.addEventListener('change', applyTransactionFilters);
             });
 
             // ─── PRINT PDF (Transactions) ──────────────────────────────────────────
@@ -1081,14 +1307,23 @@
             // ─── BOOT ──────────────────────────────────────────────────────────────────
 
             setCurrentDate();
+
+            // Pre-fill credentials and auto-login for demo convenience,
+            // but user must click login. (Pre-filled values are visible.)
+            // We do NOT auto-submit — user must press Enter or click Sign In.
+
+            // Load data in background regardless of login (so it's ready)
             loadAllSheets();
 
-            // re-apply transaction filter whenever filters change (via button)
-            // also on load we already rendered all
+            // Focus username field
+            usernameInput.focus();
 
-            // small extra: if user presses Enter in filter selects, apply
-            [txModeFilter, txStatusFilter].forEach(el => {
-                el.addEventListener('change', applyTransactionFilters);
+            // If the user presses Enter on username field, move to password
+            usernameInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    passwordInput.focus();
+                }
             });
 
         })();
