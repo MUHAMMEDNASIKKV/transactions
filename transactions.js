@@ -18,7 +18,7 @@ let dataCache = {
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbwf9dSBTOSlwEw3FixyW4lZrXrVM3ImyJN_ON47x_DkAXoh7uC7ekdijkYplxEhGDgr/exec";
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbyq2c7sEnYHIS0C09Es-AKltBOGRBWUlgLRe_NkNXGvr6vJsZlkNLss3tGR503lDnJD/exec";
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -653,6 +653,8 @@ async function showPage(page) {
         await loadUnionData();
     } else if (page === 'userTransactions') {
         await loadUserTransactions();
+    } else if (page === 'userUnion') {
+        await loadUserUnionTransactions();
     }
 }
 
@@ -966,6 +968,23 @@ async function loadUnionData() {
     await loadUnionSummary();
 }
 
+function shouldIncludeInSummary(transaction) {
+    const type = transaction.type || '';
+    const status = transaction.status || 'pending';
+    
+    // For hard and soft: include only if status is 'completed'
+    if (type === 'hard' || type === 'soft') {
+        return status === 'completed';
+    }
+    
+    // For 'to get' and 'to give': include only if status is 'pending'
+    if (type === 'to get' || type === 'to give') {
+        return status === 'pending';
+    }
+    
+    return false;
+}
+
 async function loadUnionSummary() {
     const container = document.getElementById('unionSummary');
     
@@ -994,12 +1013,15 @@ async function loadUnionSummary() {
             const type = t.type || '';
             const status = t.status || '';
             
-            // Only include completed transactions for balance calculations
-            if (status === 'completed') {
-                if (type === 'hard') hardTotal += amount;
-                else if (type === 'soft') softTotal += amount;
-                else if (type === 'to get') toGetTotal += amount;
-                else if (type === 'to give') toGiveTotal += amount;
+            // Use the new inclusion logic
+            if (type === 'hard' && status === 'completed') {
+                hardTotal += amount;
+            } else if (type === 'soft' && status === 'completed') {
+                softTotal += amount;
+            } else if (type === 'to get' && status === 'pending') {
+                toGetTotal += amount;
+            } else if (type === 'to give' && status === 'pending') {
+                toGiveTotal += amount;
             }
         });
 
@@ -1185,6 +1207,158 @@ function toggleUnionDetails(id) {
                 el.classList.remove('expanded');
             });
             document.querySelectorAll('#unionTransactionsList .expand-arrow.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+
+            container.classList.add('expanded');
+            arrow.classList.add('expanded');
+        } else {
+            container.classList.remove('expanded');
+            arrow.classList.remove('expanded');
+        }
+    }
+}
+
+// =============================
+// 👤 User Union Functions (View Only)
+// =============================
+
+async function loadUserUnionTransactions() {
+    const container = document.getElementById('userUnionTransactionsList');
+    container.innerHTML = `
+        <div class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-3xl text-emerald-500"></i>
+            <p class="mt-3 text-gray-500">Loading union transactions...</p>
+        </div>
+    `;
+
+    try {
+        const transactions = await api.getSheet('union');
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-layer-group"></i>
+                    <h3>No Union Transactions</h3>
+                    <p>No union transactions available.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const sortedTransactions = transactions.sort((a, b) => {
+            const dateA = new Date(a.date || 0);
+            const dateB = new Date(b.date || 0);
+            return dateB - dateA;
+        });
+
+        const html = sortedTransactions.map(transaction => {
+            const type = transaction.type || 'to get';
+            let modeClass = 'mode-get';
+            let modeIcon = 'fa-arrow-down';
+            
+            if (type === 'hard') { modeClass = 'mode-hard'; modeIcon = 'fa-coins'; }
+            else if (type === 'soft') { modeClass = 'mode-soft'; modeIcon = 'fa-hand-holding-heart'; }
+            else if (type === 'to give') { modeClass = 'mode-give'; modeIcon = 'fa-arrow-up'; }
+            
+            const amount = transaction.amount || '0';
+            const status = transaction.status || 'pending';
+            const statusClass = status === 'completed' ? 'status-completed' : 'status-pending';
+            
+            const dateStr = transaction.date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ? 
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
+                '<span class="text-gray-400 text-sm">No bill uploaded</span>';
+
+            return `
+                <div class="transaction-card" onclick="toggleUserUnionDetails('${transaction.transaction_id || transaction.id}')">
+                    <div class="transaction-header">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 flex-shrink-0">
+                            <span class="mode-badge ${modeClass}">${type}</span>
+                            <span class="status-badge ${statusClass}">${status}</span>
+                            <span class="font-bold text-gray-700">₹${amount}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="user-union-arrow-${transaction.transaction_id || transaction.id}"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="details-container" id="user-union-details-${transaction.transaction_id || transaction.id}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="detail-label">Transaction ID</div>
+                                    <div class="detail-value">${transaction.transaction_id || transaction.id || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Type</div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Amount</div>
+                                    <div class="detail-value font-bold">₹${amount}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Status</div>
+                                    <div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Date & Time</div>
+                                    <div class="detail-value">${formattedDate}</div>
+                                </div>
+                                <div>
+                                    <div class="detail-label">Updated At</div>
+                                    <div class="detail-value">${transaction.updated_at || 'N/A'}</div>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <div class="detail-label">Bill</div>
+                                    <div class="detail-value">${billLink}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading user union transactions:', error);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                <p>Error loading union transactions. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+function toggleUserUnionDetails(id) {
+    const container = document.getElementById(`user-union-details-${id}`);
+    const arrow = document.getElementById(`user-union-arrow-${id}`);
+
+    if (container && arrow) {
+        if (!container.classList.contains('expanded')) {
+            document.querySelectorAll('#userUnionTransactionsList .details-container.expanded').forEach(el => {
+                el.classList.remove('expanded');
+            });
+            document.querySelectorAll('#userUnionTransactionsList .expand-arrow.expanded').forEach(el => {
                 el.classList.remove('expanded');
             });
 
@@ -1521,133 +1695,6 @@ async function getNextUnionId() {
 async function submitUnionTransaction(event) {
     event.preventDefault();
 
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-
-    try {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
-        submitBtn.disabled = true;
-
-        const transactionId = document.getElementById('unionTransactionId').value;
-        const title = document.getElementById('unionTitle').value.trim();
-        const type = document.getElementById('unionType').value;
-        const amount = document.getElementById('unionAmount').value;
-        const status = document.getElementById('unionStatus').value;
-        const date = document.getElementById('unionDate').value;
-        const fileInput = document.getElementById('unionBillUpload');
-
-        if (!title || !type || !amount || !status || !date) {
-            showUnionError('Please fill in all required fields');
-            return;
-        }
-
-        let billUrl = '';
-
-        if (fileInput.files && fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            if (file.size > 5 * 1024 * 1024) {
-                showUnionError('File size must be less than 5MB');
-                return;
-            }
-
-            const uploadResult = await api.uploadFile('admin', transactionId, file);
-
-            if (uploadResult && uploadResult.success) {
-                billUrl = uploadResult.fileUrl || '';
-            } else {
-                showUnionError('Failed to upload bill: ' + (uploadResult?.error || 'Unknown error'));
-                return;
-            }
-        }
-
-        const result = await api.addUnionTransaction(transactionId, title, type, amount, billUrl, status, date);
-
-        if (result && result.success) {
-            showUnionSuccess('Union transaction added successfully!');
-            setTimeout(() => {
-                closeUnionModal();
-                loadUnionData();
-            }, 1500);
-        } else {
-            throw new Error(result?.error || 'Failed to add union transaction');
-        }
-
-    } catch (error) {
-        console.error('Error adding union transaction:', error);
-        showUnionError('Error: ' + error.message);
-    } finally {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }
-}
-
-function showUnionError(message) {
-    const errorDiv = document.getElementById('unionError');
-    errorDiv.textContent = message;
-    errorDiv.classList.remove('hidden');
-    document.getElementById('unionSuccess').classList.add('hidden');
-}
-
-function showUnionSuccess(message) {
-    const successDiv = document.getElementById('unionSuccess');
-    successDiv.textContent = message;
-    successDiv.classList.remove('hidden');
-    document.getElementById('unionError').classList.add('hidden');
-}
-
-// =============================
-// ✏️ Edit Union Functions
-// =============================
-
-async function openEditUnionModal(transactionId) {
-    const modal = document.getElementById('unionModal');
-    const form = document.getElementById('unionForm');
-    form.reset();
-    document.getElementById('unionError').classList.add('hidden');
-    document.getElementById('unionSuccess').classList.add('hidden');
-
-    try {
-        const transactions = await api.getSheet('union');
-        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
-
-        if (!transaction) {
-            alert('Transaction not found!');
-            return;
-        }
-
-        document.getElementById('unionTransactionId').value = transaction.transaction_id || transaction.id;
-        document.getElementById('unionTitle').value = transaction.title || '';
-        document.getElementById('unionType').value = transaction.type || '';
-        document.getElementById('unionAmount').value = transaction.amount || '';
-        document.getElementById('unionStatus').value = transaction.status || 'pending';
-
-        const dateStr = transaction.date || '';
-        if (dateStr) {
-            const date = new Date(dateStr);
-            const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-            document.getElementById('unionDate').value = localDateTime.toISOString().slice(0, 16);
-        }
-
-        // Change the submit button text to "Update"
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Update Transaction';
-
-        modal.classList.remove('hidden');
-
-        // Store the transaction ID for update
-        form.dataset.editId = transactionId;
-
-    } catch (error) {
-        console.error('Error opening edit union:', error);
-        alert('Error loading transaction details. Please try again.');
-    }
-}
-
-// Override submitUnionTransaction to handle both add and edit
-const originalSubmitUnion = submitUnionTransaction;
-submitUnionTransaction = async function(event) {
-    event.preventDefault();
-
     const form = document.getElementById('unionForm');
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
@@ -1724,7 +1771,69 @@ submitUnionTransaction = async function(event) {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     }
-};
+}
+
+function showUnionError(message) {
+    const errorDiv = document.getElementById('unionError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    document.getElementById('unionSuccess').classList.add('hidden');
+}
+
+function showUnionSuccess(message) {
+    const successDiv = document.getElementById('unionSuccess');
+    successDiv.textContent = message;
+    successDiv.classList.remove('hidden');
+    document.getElementById('unionError').classList.add('hidden');
+}
+
+// =============================
+// ✏️ Edit Union Functions
+// =============================
+
+async function openEditUnionModal(transactionId) {
+    const modal = document.getElementById('unionModal');
+    const form = document.getElementById('unionForm');
+    form.reset();
+    document.getElementById('unionError').classList.add('hidden');
+    document.getElementById('unionSuccess').classList.add('hidden');
+
+    try {
+        const transactions = await api.getSheet('union');
+        const transaction = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+
+        if (!transaction) {
+            alert('Transaction not found!');
+            return;
+        }
+
+        document.getElementById('unionTransactionId').value = transaction.transaction_id || transaction.id;
+        document.getElementById('unionTitle').value = transaction.title || '';
+        document.getElementById('unionType').value = transaction.type || '';
+        document.getElementById('unionAmount').value = transaction.amount || '';
+        document.getElementById('unionStatus').value = transaction.status || 'pending';
+
+        const dateStr = transaction.date || '';
+        if (dateStr) {
+            const date = new Date(dateStr);
+            const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            document.getElementById('unionDate').value = localDateTime.toISOString().slice(0, 16);
+        }
+
+        // Change the submit button text to "Update"
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Update Transaction';
+
+        modal.classList.remove('hidden');
+
+        // Store the transaction ID for update
+        form.dataset.editId = transactionId;
+
+    } catch (error) {
+        console.error('Error opening edit union:', error);
+        alert('Error loading transaction details. Please try again.');
+    }
+}
 
 // =============================
 // 🗑️ Delete Functions with Confirmation
