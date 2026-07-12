@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>Nadha · Union Dashboard</title>
+    <!-- html2pdf library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+    </script>
+    <style>
+        /* ── Reset & Base ─────────────────────────────────────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f4f7fc;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', system-ui, sans-serif;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-wrapper {
+            max-width: 1400px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 15px 40px rgba(11, 43, 74, 0.06);
+            padding: 1.8rem 2rem 2.5rem;
+        }
+
+        /* ── Header ────────────────────────────────────────────────── */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #eef2f6;
+            padding-bottom: 1.2rem;
+        }
+
+        .app-header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #0b2b4a;
+            text-transform: uppercase;
+        }
+
+        .app-header .sub {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* ── Info Banner ──────────────────────────────────────────── */
+        .info-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 0.7rem 1.2rem;
+            border-radius: 12px;
+            color: #166534;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.2rem;
+        }
+
+        /* ── Stats Row ────────────────────────────────────────────── */
+        .stats-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.2rem;
+        }
+
+        .stat-item {
+            background: #f1f5f9;
+            padding: 0.35rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .stat-item strong {
+            color: #0b2b4a;
+        }
+
+        /* ── Filter Panel ──────────────────────────────────────────── */
+        .filter-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: #f8fafd;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.2rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #0b2b4a;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .filter-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.4rem 1.2rem 0.4rem 0.8rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            background: #ffffff;
+            color: #0b2b4a;
+            outline: none;
+            cursor: pointer;
+            min-width: 110px;
+        }
+
+        .filter-select:focus {
+            border-color: #0b2b4a;
+        }
+
+        .filter-btn {
+            background: #0b2b4a;
+            border: none;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.45rem 1.6rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #1e3b5a;
+        }
+
+        .reset-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.45rem 1.6rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #f8fafc;
+            color: #0b2b4a;
+        }
+
+        .count-badge {
+            background: #e0f2fe;
+            padding: 0.3rem 1.2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #0369a1;
+            font-size: 0.8rem;
+        }
+
+        /* ── Table ────────────────────────────────────────────────── */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+            font-size: 0.92rem;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #0b2b4a;
+            font-weight: 700;
+            padding: 0.9rem 1rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+
+        tr:hover td {
+            background-color: #fafcff;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 2.5rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* ── Badge: Type ───────────────────────────────────────────── */
+        .badge-mode {
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            display: inline-block;
+            border: 1px solid transparent;
+        }
+        .badge-mode.to-get {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+        .badge-mode.to-give {
+            background: #fee2e2;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+        .badge-mode.hard {
+            background: #ffedd5;
+            color: #9a3412;
+            border-color: #fdba74;
+        }
+        .badge-mode.soft {
+            background: #dbeafe;
+            color: #1e40af;
+            border-color: #93c5fd;
+        }
+        .badge-mode.default {
+            background: #f1f5f9;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+
+        /* ── Link "view" ──────────────────────────────────────────── */
+        .view-link {
+            color: #0b2b4a;
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .view-link:hover {
+            color: #1e3b5a;
+        }
+
+        /* ── Print Button ─────────────────────────────────────────── */
+        .print-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .print-btn {
+            background: #0b2b4a;
+            border: none;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 0.8rem 2.2rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(11, 43, 74, 0.12);
+            transition: all 0.2s;
+        }
+
+        .print-btn:hover {
+            background: #153e66;
+            transform: translateY(-1px);
+        }
+
+        /* ── PDF render zone (hidden) ────────────────────────────── */
+        #pdf-render-zone {
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
+            background: #ffffff !important;
+            margin: 0 auto;
+        }
+
+        body.printing-mode .app-wrapper {
+            display: none !important;
+        }
+        body:not(.printing-mode) #pdf-render-zone {
+            display: none !important;
+        }
+
+        /* ── Responsive ───────────────────────────────────────────── */
+        @media (max-width: 700px) {
+            .app-wrapper {
+                padding: 1.2rem;
+            }
+            .app-header h1 {
+                font-size: 1.3rem;
+            }
+            .filter-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group {
+                justify-content: stretch;
+            }
+            .filter-select {
+                flex: 1;
+            }
+            .filter-btn,
+            .reset-btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .print-section {
+                justify-content: center;
+            }
+            .print-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper" id="appWrapper">
+
+        <!-- ─── HEADER ──────────────────────────────────────────── -->
+        <div class="app-header">
+            <div>
+                <h1>Nadha · Union</h1>
+                <span class="sub">Type &amp; Status dashboard</span>
+            </div>
+            <div style="font-size:0.85rem; color:#64748b;">
+                <span id="currentDate"></span>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- UNION SECTION                                              -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div id="unionSection">
+
+            <!-- Filter Panel -->
+            <div class="filter-panel" id="unionFilterPanel">
+                <div class="filter-group">
+                    <label>📌 Type</label>
+                    <select class="filter-select" id="unionTypeFilter">
+                        <option value="all">All</option>
+                        <option value="to get">To Get</option>
+                        <option value="to give">To Give</option>
+                        <option value="hard">Hard</option>
+                        <option value="soft">Soft</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="gap:0.5rem;">
+                    <button class="filter-btn" id="unionApplyFilterBtn">Apply</button>
+                    <button class="reset-btn" id="unionResetFilterBtn">Reset</button>
+                    <span class="count-badge" id="unionCountBadge">All</span>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <span class="stat-item">Total: <strong id="unionTotalCount">0</strong></span>
+                <span class="stat-item" style="background:#e6f0fa;">Filtered: <strong id="unionFilteredCount">0</strong></span>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Transaction ID</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Bill URL</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Updated At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unionBody">
+                        <tr><td colspan="8" class="empty-message">Loading union…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Print button -->
+            <div class="print-section">
+                <button class="print-btn" id="unionPrintBtn">
+                    <span>📄</span> Download Union PDF
+                </button>
+            </div>
+        </div>
+
+    </div>
+    <!-- end app-wrapper -->
+
+    <!-- ─── PDF RENDER ZONE ────────────────────────────────────────── -->
+    <div id="pdf-render-zone"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── CONFIG ──────────────────────────────────────────────────────────────
+
+            // Union sheet (only)
+            const UNION_SHEET = {
+                url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=992781757&single=true&output=csv',
+                headings: ['transaction_id', 'title', 'type', 'bill_url', 'amount', 'date', 'updated_at']
+            };
+
+            // ─── STATE ──────────────────────────────────────────────────────────────
+            let unionData = [];
+            let filteredUnion = [];
+
+            // ─── DOM REFS ────────────────────────────────────────────────────────────
+            const unionBody = document.getElementById('unionBody');
+            const unionTotalCount = document.getElementById('unionTotalCount');
+            const unionFilteredCount = document.getElementById('unionFilteredCount');
+            const unionCountBadge = document.getElementById('unionCountBadge');
+            const unionTypeFilter = document.getElementById('unionTypeFilter');
+            const unionApplyFilterBtn = document.getElementById('unionApplyFilterBtn');
+            const unionResetFilterBtn = document.getElementById('unionResetFilterBtn');
+            const unionPrintBtn = document.getElementById('unionPrintBtn');
+            const currentDateEl = document.getElementById('currentDate');
+
+            // ─── HELPERS ──────────────────────────────────────────────────────────────
+
+            function escapeHTML(str) {
+                if (str === undefined || str === null) return '';
+                return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } [m] ||
+                    m));
+            }
+
+            function parseCSV(csvText) {
+                const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+                if (lines.length === 0) return [];
+
+                const cleanSplit = (row) => {
+                    const res = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < row.length; i++) {
+                        const ch = row[i];
+                        if (ch === '"') { inQuotes = !inQuotes; } else if (ch === ',' && !inQuotes) {
+                            res.push(current.trim());
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                    }
+                    res.push(current.trim());
+                    return res;
+                };
+
+                const headers = cleanSplit(lines[0]).map(h => h.toLowerCase().trim());
+                const rows = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = cleanSplit(lines[i]);
+                    const obj = {};
+                    headers.forEach((h, idx) => {
+                        obj[h] = (idx < cols.length) ? cols[idx] : '';
+                    });
+                    rows.push(obj);
+                }
+                return rows;
+            }
+
+            function fetchSheet(url) {
+                return fetch(url)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.text();
+                    })
+                    .then(csv => parseCSV(csv));
+            }
+
+            // ─── MODE / TYPE COLOR CLASS ────────────────────────────────────────────
+
+            function getModeClass(val) {
+                if (!val) return 'default';
+                const v = String(val).toLowerCase().trim();
+                if (v === 'to get' || v === 'toget') return 'to-get';
+                if (v === 'to give' || v === 'togive') return 'to-give';
+                if (v === 'hard') return 'hard';
+                if (v === 'soft') return 'soft';
+                return 'default';
+            }
+
+            // ─── BILL URL LINK ──────────────────────────────────────────────────────
+
+            function renderBillLink(url) {
+                if (!url || url.trim() === '') return '—';
+                const clean = url.trim();
+                return `<a href="${escapeHTML(clean)}" target="_blank" class="view-link">view</a>`;
+            }
+
+            // ─── RENDER: UNION ──────────────────────────────────────────────────────
+
+            function renderUnion(data) {
+                if (!data || data.length === 0) {
+                    unionBody.innerHTML = `<tr><td colspan="8" class="empty-message">No union records found.</td></tr>`;
+                    unionTotalCount.textContent = '0';
+                    unionFilteredCount.textContent = '0';
+                    unionCountBadge.textContent = '0';
+                    return;
+                }
+
+                let html = '';
+                data.forEach((row, i) => {
+                    const typeVal = row.type || '';
+                    const modeCls = getModeClass(typeVal);
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><code>${escapeHTML(row.transaction_id)}</code></td>
+                        <td><strong>${escapeHTML(row.title)}</strong></td>
+                        <td><span class="badge-mode ${modeCls}">${escapeHTML(typeVal)}</span></td>
+                        <td>${renderBillLink(row.bill_url)}</td>
+                        <td>${escapeHTML(row.amount)}</td>
+                        <td>${escapeHTML(row.date)}</td>
+                        <td>${escapeHTML(row.updated_at)}</td>
+                    </tr>`;
+                });
+
+                unionBody.innerHTML = html;
+                unionTotalCount.textContent = unionData.length;
+                unionFilteredCount.textContent = data.length;
+                const total = unionData.length;
+                unionCountBadge.textContent = data.length === total ?
+                    `All ${data.length}` :
+                    `${data.length} / ${total}`;
+            }
+
+            // ─── FILTER: UNION ──────────────────────────────────────────────────────
+
+            function applyUnionFilters() {
+                const typeVal = unionTypeFilter.value.toLowerCase().trim();
+                const all = unionData;
+
+                let filtered = all.filter(row => {
+                    const rowType = String(row.type || '').toLowerCase().trim();
+                    if (typeVal === 'all') return true;
+                    return rowType === typeVal;
+                });
+
+                filteredUnion = filtered;
+                renderUnion(filtered);
+            }
+
+            // ─── LOAD DATA ──────────────────────────────────────────────────────────
+
+            function loadUnionData() {
+                fetchSheet(UNION_SHEET.url)
+                    .then(data => {
+                        unionData = data;
+                        filteredUnion = [...data];
+                        renderUnion(data);
+                    })
+                    .catch(err => {
+                        console.error('Union load error:', err);
+                        unionBody.innerHTML =
+                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load union sheet.</td></tr>`;
+                    });
+            }
+
+            // ─── DATE ─────────────────────────────────────────────────────────────────
+
+            function setCurrentDate() {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                currentDateEl.textContent = `${d}-${m}-${y}`;
+            }
+
+            // ─── UNION FILTER EVENTS ──────────────────────────────────────────────
+
+            unionApplyFilterBtn.addEventListener('click', applyUnionFilters);
+            unionResetFilterBtn.addEventListener('click', function() {
+                unionTypeFilter.value = 'all';
+                applyUnionFilters();
+            });
+            unionTypeFilter.addEventListener('change', applyUnionFilters);
+
+            // ─── PRINT: UNION PDF ──────────────────────────────────────────────────
+
+            function generateUnionPDF() {
+                const data = filteredUnion;
+                if (!data || data.length === 0) {
+                    alert('No union data to print.');
+                    return;
+                }
+
+                const today = new Date();
+                const dateStr =
+                    `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+
+                const PER_PAGE = 25;
+                const total = data.length;
+                const totalPages = Math.ceil(total / PER_PAGE);
+
+                let pagesHTML = '';
+                for (let page = 0; page < totalPages; page++) {
+                    const start = page * PER_PAGE;
+                    const end = Math.min(start + PER_PAGE, total);
+                    const pageData = data.slice(start, end);
+
+                    let rowsHTML = '';
+                    pageData.forEach((row, idx) => {
+                        const globalIdx = start + idx + 1;
+                        const typeVal = row.type || '-';
+                        rowsHTML += `
+                            <tr style="border-bottom:1px solid #d1d5db;">
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${globalIdx}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(typeVal)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
+                            </tr>`;
+                    });
+
+                    const pageBreak = (page < totalPages - 1) ? 'page-break-after: always !important;' : '';
+
+                    pagesHTML += `
+                        <div style="padding:35px 40px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
+                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:20px;">
+                                <h1 style="font-size:22px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">UNION · TYPE STATUS</h1>
+                                <p style="font-size:13px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
+                                <thead>
+                                    <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:6%;">#</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:16%;">Tx ID</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:20%;">Title</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Type</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Amount</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Date</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHTML}
+                                </tbody>
+                            </table>
+                            <div style="margin-top:20px; border-top:1px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:10px; font-weight:bold; color:#475569;">
+                                <div>Total: ${total} · Page ${page+1} of ${totalPages}</div>
+                                <div>Nadha · Union</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const zone = document.getElementById('pdf-render-zone');
+                zone.innerHTML = pagesHTML;
+                document.body.classList.add('printing-mode');
+
+                const opt = {
+                    margin: 0,
+                    filename: `Union_Status_${dateStr}.pdf`,
+                    image: { type: 'jpeg', quality: 1.0 },
+                    html2canvas: { scale: 2.5, logging: false, useCORS: true, scrollX: 0, scrollY: 0 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                };
+
+                html2pdf().set(opt).from(zone).save()
+                    .then(() => {
+                        document.body.classList.remove('printing-mode');
+                        zone.innerHTML = '';
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        document.body.classList.remove('printing-mode');
+                        zone.innerHTML = '';
+                        alert('PDF generation failed.');
+                    });
+            }
+
+            unionPrintBtn.addEventListener('click', generateUnionPDF);
+
+            // ─── BOOT ──────────────────────────────────────────────────────────────────
+
+            setCurrentDate();
+            loadUnionData();
+
+        })();
+    </script>
+
+</body>
+</html>
