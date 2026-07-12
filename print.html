@@ -291,6 +291,21 @@
             display: inline-block;
         }
 
+        /* ── Type badges with colors ─────────────────────────────── */
+        .badge-type {
+            padding: 0.2rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            display: inline-block;
+            color: #fff;
+        }
+        .badge-type.hard { background: #f97316; }      /* orange */
+        .badge-type.soft { background: #3b82f6; }      /* blue */
+        .badge-type.toget { background: #22c55e; }     /* green */
+        .badge-type.togive { background: #ef4444; }    /* red */
+
         .badge-mode {
             padding: 0.2rem 0.7rem;
             border-radius: 20px;
@@ -559,7 +574,7 @@
             // ─── STATE ──────────────────────────────────────────────────────────────
             const dataStore = {
                 union: [],
-                transactions: [] // combined from user sheets
+                transactions: []
             };
 
             let filteredUnion = [];
@@ -634,6 +649,18 @@
                     .then(csv => parseCSV(csv));
             }
 
+            // ─── TYPE BADGE HELPER ──────────────────────────────────────────────────
+            function getTypeBadge(type) {
+                const t = String(type || '').toLowerCase();
+                let cls = 'badge-type';
+                if (t === 'hard') cls += ' hard';
+                else if (t === 'soft') cls += ' soft';
+                else if (t === 'to get') cls += ' toget';
+                else if (t === 'to give') cls += ' togive';
+                else cls += ' soft'; // fallback
+                return `<span class="${cls}">${escapeHTML(type)}</span>`;
+            }
+
             // ─── RENDER FUNCTIONS ────────────────────────────────────────────────────
 
             function renderUnion(data) {
@@ -646,12 +673,16 @@
                 }
                 let html = '';
                 data.forEach((row, i) => {
+                    const billUrl = row.bill_url ? row.bill_url.trim() : '';
+                    const billDisplay = billUrl ? 
+                        `<a href="${escapeHTML(billUrl)}" target="_blank" style="color:#0b2b4a; text-decoration:underline;">View</a>` :
+                        '-';
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
                         <td><strong>${escapeHTML(row.title)}</strong></td>
-                        <td><span class="badge-mode">${escapeHTML(row.type)}</span></td>
-                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(row.bill_url)}</td>
+                        <td>${getTypeBadge(row.type)}</td>
+                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis;">${billDisplay}</td>
                         <td>${escapeHTML(row.amount)}</td>
                         <td>${escapeHTML(row.date)}</td>
                         <td>${escapeHTML(row.updated_at)}</td>
@@ -807,13 +838,17 @@
                     let rowsHTML = '';
                     pageData.forEach((row, idx) => {
                         const globalIdx = start + idx + 1;
+                        const billUrl = row.bill_url ? row.bill_url.trim() : '';
+                        const billDisplay = billUrl ? 
+                            `<a href="${escapeHTML(billUrl)}" target="_blank" style="color:#0b2b4a; text-decoration:underline;">View</a>` :
+                            '-';
                         rowsHTML += `
                             <tr style="border-bottom:1px solid #d1d5db;">
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${globalIdx}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.type)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.bill_url)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${billDisplay}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
