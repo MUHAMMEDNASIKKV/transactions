@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>Nadha · Union Dashboard</title>
+    <title>Nadha · Admin Dashboard</title>
     <!-- html2pdf library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
     </script>
@@ -143,6 +143,22 @@
             border-color: #0b2b4a;
         }
 
+        .filter-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.4rem 0.8rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            background: #ffffff;
+            color: #0b2b4a;
+            outline: none;
+            min-width: 140px;
+        }
+
+        .filter-input:focus {
+            border-color: #0b2b4a;
+        }
+
         .filter-btn {
             background: #0b2b4a;
             border: none;
@@ -207,6 +223,11 @@
             padding: 0.9rem 1rem;
             text-align: left;
             border-bottom: 2px solid #e2e8f0;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            background: #eef2f6;
         }
 
         td {
@@ -226,7 +247,40 @@
             font-style: italic;
         }
 
-        /* ── Badge: Type ───────────────────────────────────────────── */
+        /* ── Badge: Dept / Source ─────────────────────────────────── */
+        .badge-dept {
+            background: #f0f4f8;
+            padding: 0.2rem 0.7rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #0b2b4a;
+            display: inline-block;
+        }
+
+        /* ── Status Badge ──────────────────────────────────── */
+        .badge-status {
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            display: inline-block;
+        }
+        .badge-status.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .badge-status.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ── Mode / Type Color Badges ────────────────────────────── */
         .badge-mode {
             padding: 0.2rem 0.8rem;
             border-radius: 20px;
@@ -305,7 +359,7 @@
             transform: translateY(-1px);
         }
 
-        /* ── PDF render zone (hidden) ────────────────────────────── */
+        /* ── PDF render zone ────────────────────────────────────────── */
         #pdf-render-zone {
             display: block !important;
             visibility: visible !important;
@@ -336,8 +390,9 @@
             .filter-group {
                 justify-content: stretch;
             }
-            .filter-select {
+            .filter-select, .filter-input {
                 flex: 1;
+                min-width: 80px;
             }
             .filter-btn,
             .reset-btn {
@@ -361,8 +416,8 @@
         <!-- ─── HEADER ──────────────────────────────────────────── -->
         <div class="app-header">
             <div>
-                <h1>Nadha · Union</h1>
-                <span class="sub">Type &amp; Status dashboard</span>
+                <h1>Nadha · Admin</h1>
+                <span class="sub">Union Dashboard</span>
             </div>
             <div style="font-size:0.85rem; color:#64748b;">
                 <span id="currentDate"></span>
@@ -372,7 +427,7 @@
         <!-- ═══════════════════════════════════════════════════════════ -->
         <!-- UNION SECTION                                              -->
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <div id="unionSection">
+        <div id="tab-union">
 
             <!-- Filter Panel -->
             <div class="filter-panel" id="unionFilterPanel">
@@ -385,6 +440,19 @@
                         <option value="hard">Hard</option>
                         <option value="soft">Soft</option>
                     </select>
+                </div>
+                <div class="filter-group">
+                    <label>📌 Status</label>
+                    <select class="filter-select" id="unionStatusFilter">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>🔤 Title</label>
+                    <input class="filter-input" id="unionTitleFilter" placeholder="Filter title..." />
                 </div>
                 <div class="filter-group" style="gap:0.5rem;">
                     <button class="filter-btn" id="unionApplyFilterBtn">Apply</button>
@@ -404,21 +472,22 @@
                         <tr>
                             <th>#</th>
                             <th>Transaction ID</th>
-                            <th>Title</th>
-                            <th>Type</th>
+                            <th data-sort="title" class="sortable">Title ⇅</th>
+                            <th data-sort="type" class="sortable">Type ⇅</th>
+                            <th data-sort="status" class="sortable">Status ⇅</th>
                             <th>Bill URL</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Updated At</th>
+                            <th data-sort="amount" class="sortable">Amount ⇅</th>
+                            <th data-sort="date" class="sortable">Date ⇅</th>
+                            <th data-sort="updated_at" class="sortable">Updated At ⇅</th>
                         </tr>
                     </thead>
                     <tbody id="unionBody">
-                        <tr><td colspan="8" class="empty-message">Loading union…</td></tr>
+                        <tr><td colspan="9" class="empty-message">Loading union…</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Print button -->
+            <!-- Print button for Union -->
             <div class="print-section">
                 <button class="print-btn" id="unionPrintBtn">
                     <span>📄</span> Download Union PDF
@@ -438,25 +507,30 @@
 
             // ─── CONFIG ──────────────────────────────────────────────────────────────
 
-            // Union sheet (only)
             const UNION_SHEET = {
                 url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=992781757&single=true&output=csv',
-                headings: ['transaction_id', 'title', 'type', 'bill_url', 'amount', 'date', 'updated_at']
+                headings: ['transaction_id', 'title', 'type', 'status', 'bill_url', 'amount', 'date', 'updated_at']
             };
 
             // ─── STATE ──────────────────────────────────────────────────────────────
             let unionData = [];
             let filteredUnion = [];
+            let unionSortKey = null;
+            let unionSortAsc = true;
 
             // ─── DOM REFS ────────────────────────────────────────────────────────────
+
             const unionBody = document.getElementById('unionBody');
             const unionTotalCount = document.getElementById('unionTotalCount');
             const unionFilteredCount = document.getElementById('unionFilteredCount');
             const unionCountBadge = document.getElementById('unionCountBadge');
             const unionTypeFilter = document.getElementById('unionTypeFilter');
+            const unionStatusFilter = document.getElementById('unionStatusFilter');
+            const unionTitleFilter = document.getElementById('unionTitleFilter');
             const unionApplyFilterBtn = document.getElementById('unionApplyFilterBtn');
             const unionResetFilterBtn = document.getElementById('unionResetFilterBtn');
             const unionPrintBtn = document.getElementById('unionPrintBtn');
+
             const currentDateEl = document.getElementById('currentDate');
 
             // ─── HELPERS ──────────────────────────────────────────────────────────────
@@ -510,8 +584,6 @@
                     .then(csv => parseCSV(csv));
             }
 
-            // ─── MODE / TYPE COLOR CLASS ────────────────────────────────────────────
-
             function getModeClass(val) {
                 if (!val) return 'default';
                 const v = String(val).toLowerCase().trim();
@@ -522,7 +594,15 @@
                 return 'default';
             }
 
-            // ─── BILL URL LINK ──────────────────────────────────────────────────────
+            function getStatusBadge(status) {
+                if (!status) return `<span class="badge-status">—</span>`;
+                const s = String(status).toLowerCase().trim();
+                let cls = 'badge-status';
+                if (s === 'pending') cls += ' pending';
+                else if (s === 'completed') cls += ' completed';
+                else if (s === 'cancelled') cls += ' cancelled';
+                return `<span class="${cls}">${escapeHTML(s)}</span>`;
+            }
 
             function renderBillLink(url) {
                 if (!url || url.trim() === '') return '—';
@@ -530,11 +610,26 @@
                 return `<a href="${escapeHTML(clean)}" target="_blank" class="view-link">view</a>`;
             }
 
+            // ─── SORT: UNION ──────────────────────────────────────────────────────────
+
+            function sortUnionData(data, key, asc) {
+                if (!key) return data;
+                const sorted = [...data];
+                sorted.sort((a, b) => {
+                    const va = (a[key] || '').toString().toLowerCase();
+                    const vb = (b[key] || '').toString().toLowerCase();
+                    if (va < vb) return asc ? -1 : 1;
+                    if (va > vb) return asc ? 1 : -1;
+                    return 0;
+                });
+                return sorted;
+            }
+
             // ─── RENDER: UNION ──────────────────────────────────────────────────────
 
             function renderUnion(data) {
                 if (!data || data.length === 0) {
-                    unionBody.innerHTML = `<tr><td colspan="8" class="empty-message">No union records found.</td></tr>`;
+                    unionBody.innerHTML = `<tr><td colspan="9" class="empty-message">No union records found.</td></tr>`;
                     unionTotalCount.textContent = '0';
                     unionFilteredCount.textContent = '0';
                     unionCountBadge.textContent = '0';
@@ -545,11 +640,13 @@
                 data.forEach((row, i) => {
                     const typeVal = row.type || '';
                     const modeCls = getModeClass(typeVal);
+                    const statusHtml = getStatusBadge(row.status);
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
                         <td><strong>${escapeHTML(row.title)}</strong></td>
                         <td><span class="badge-mode ${modeCls}">${escapeHTML(typeVal)}</span></td>
+                        <td>${statusHtml}</td>
                         <td>${renderBillLink(row.bill_url)}</td>
                         <td>${escapeHTML(row.amount)}</td>
                         <td>${escapeHTML(row.date)}</td>
@@ -570,13 +667,23 @@
 
             function applyUnionFilters() {
                 const typeVal = unionTypeFilter.value.toLowerCase().trim();
-                const all = unionData;
+                const statusVal = unionStatusFilter.value.toLowerCase().trim();
+                const titleVal = unionTitleFilter.value.toLowerCase().trim();
 
-                let filtered = all.filter(row => {
+                let filtered = unionData.filter(row => {
                     const rowType = String(row.type || '').toLowerCase().trim();
-                    if (typeVal === 'all') return true;
-                    return rowType === typeVal;
+                    const rowStatus = String(row.status || '').toLowerCase().trim();
+                    const rowTitle = String(row.title || '').toLowerCase().trim();
+                    let match = true;
+                    if (typeVal !== 'all' && rowType !== typeVal) match = false;
+                    if (statusVal !== 'all' && rowStatus !== statusVal) match = false;
+                    if (titleVal && !rowTitle.includes(titleVal)) match = false;
+                    return match;
                 });
+
+                if (unionSortKey) {
+                    filtered = sortUnionData(filtered, unionSortKey, unionSortAsc);
+                }
 
                 filteredUnion = filtered;
                 renderUnion(filtered);
@@ -589,12 +696,15 @@
                     .then(data => {
                         unionData = data;
                         filteredUnion = [...data];
-                        renderUnion(data);
+                        if (unionSortKey) {
+                            filteredUnion = sortUnionData(filteredUnion, unionSortKey, unionSortAsc);
+                        }
+                        renderUnion(filteredUnion);
                     })
                     .catch(err => {
                         console.error('Union load error:', err);
                         unionBody.innerHTML =
-                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load union sheet.</td></tr>`;
+                            `<tr><td colspan="9" class="empty-message">⚠️ Failed to load union sheet.</td></tr>`;
                     });
             }
 
@@ -608,16 +718,37 @@
                 currentDateEl.textContent = `${d}-${m}-${y}`;
             }
 
+            // ─── UNION SORT ──────────────────────────────────────────────────────────
+
+            document.querySelectorAll('#tab-union .sortable').forEach(th => {
+                th.addEventListener('click', function() {
+                    const key = this.dataset.sort;
+                    if (unionSortKey === key) {
+                        unionSortAsc = !unionSortAsc;
+                    } else {
+                        unionSortKey = key;
+                        unionSortAsc = true;
+                    }
+                    applyUnionFilters();
+                });
+            });
+
             // ─── UNION FILTER EVENTS ──────────────────────────────────────────────
 
             unionApplyFilterBtn.addEventListener('click', applyUnionFilters);
             unionResetFilterBtn.addEventListener('click', function() {
                 unionTypeFilter.value = 'all';
+                unionStatusFilter.value = 'all';
+                unionTitleFilter.value = '';
+                unionSortKey = null;
+                unionSortAsc = true;
                 applyUnionFilters();
             });
             unionTypeFilter.addEventListener('change', applyUnionFilters);
+            unionStatusFilter.addEventListener('change', applyUnionFilters);
+            unionTitleFilter.addEventListener('input', applyUnionFilters);
 
-            // ─── PRINT: UNION PDF ──────────────────────────────────────────────────
+            // ─── PRINT: UNION PDF (no bill_url) ──────────────────────────────────
 
             function generateUnionPDF() {
                 const data = filteredUnion;
@@ -629,7 +760,6 @@
                 const today = new Date();
                 const dateStr =
                     `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
-
                 const PER_PAGE = 25;
                 const total = data.length;
                 const totalPages = Math.ceil(total / PER_PAGE);
@@ -643,13 +773,13 @@
                     let rowsHTML = '';
                     pageData.forEach((row, idx) => {
                         const globalIdx = start + idx + 1;
-                        const typeVal = row.type || '-';
                         rowsHTML += `
                             <tr style="border-bottom:1px solid #d1d5db;">
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${globalIdx}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
-                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(typeVal)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.type)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.status)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
@@ -657,28 +787,26 @@
                     });
 
                     const pageBreak = (page < totalPages - 1) ? 'page-break-after: always !important;' : '';
-
                     pagesHTML += `
                         <div style="padding:35px 40px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
                             <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:20px;">
-                                <h1 style="font-size:22px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">UNION · TYPE STATUS</h1>
+                                <h1 style="font-size:22px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">UNION · TYPE & STATUS</h1>
                                 <p style="font-size:13px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
                             </div>
                             <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
                                 <thead>
                                     <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:6%;">#</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:16%;">Tx ID</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:20%;">Title</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Type</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Amount</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Date</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Updated</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Tx ID</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:18%;">Title</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Type</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Status</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Amount</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Date</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Updated</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    ${rowsHTML}
-                                </tbody>
+                                <tbody>${rowsHTML}</tbody>
                             </table>
                             <div style="margin-top:20px; border-top:1px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:10px; font-weight:bold; color:#475569;">
                                 <div>Total: ${total} · Page ${page+1} of ${totalPages}</div>
@@ -723,6 +851,5 @@
 
         })();
     </script>
-
 </body>
 </html>
