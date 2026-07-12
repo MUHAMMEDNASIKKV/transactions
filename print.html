@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>Mamburam · Admin Dashboard</title>
+    <!-- html2pdf library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+    </script>
+    <style>
+        /* ── Reset & Base ─────────────────────────────────────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f4f7fc;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', system-ui, sans-serif;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-wrapper {
+            max-width: 1300px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 15px 40px rgba(11, 43, 74, 0.06);
+            padding: 1.8rem 2rem 2.5rem;
+        }
+
+        /* ── Header ────────────────────────────────────────────────── */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #eef2f6;
+            padding-bottom: 1.2rem;
+        }
+
+        .app-header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #0b2b4a;
+            text-transform: uppercase;
+        }
+
+        .app-header .sub {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* ── Navbar Tabs ──────────────────────────────────────────── */
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1.8rem;
+            border-bottom: 2px solid #eef2f6;
+            padding-bottom: 0.4rem;
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            padding: 0.7rem 1.6rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #64748b;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .nav-tab:hover {
+            background: #f1f5f9;
+            color: #0b2b4a;
+        }
+
+        .nav-tab.active {
+            background: #0b2b4a;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(11, 43, 74, 0.2);
+        }
+
+        /* ── Tab Content ──────────────────────────────────────────── */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0.4;
+                transform: translateY(4px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Info Banner ──────────────────────────────────────────── */
+        .info-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 0.7rem 1.2rem;
+            border-radius: 12px;
+            color: #166534;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.2rem;
+        }
+
+        /* ── Stats Row ────────────────────────────────────────────── */
+        .stats-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.2rem;
+        }
+
+        .stat-item {
+            background: #f1f5f9;
+            padding: 0.35rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .stat-item strong {
+            color: #0b2b4a;
+        }
+
+        /* ── Filter Panel (transactions only) ────────────────────── */
+        .filter-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: #f8fafd;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.2rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #0b2b4a;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .filter-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.4rem 1.2rem 0.4rem 0.8rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            background: #ffffff;
+            color: #0b2b4a;
+            outline: none;
+            cursor: pointer;
+            min-width: 110px;
+        }
+
+        .filter-select:focus {
+            border-color: #0b2b4a;
+        }
+
+        .filter-btn {
+            background: #0b2b4a;
+            border: none;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.45rem 1.6rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #1e3b5a;
+        }
+
+        .reset-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.45rem 1.6rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #f8fafc;
+            color: #0b2b4a;
+        }
+
+        .count-badge {
+            background: #e0f2fe;
+            padding: 0.3rem 1.2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #0369a1;
+            font-size: 0.8rem;
+        }
+
+        /* ── Table ────────────────────────────────────────────────── */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+            font-size: 0.92rem;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #0b2b4a;
+            font-weight: 700;
+            padding: 0.9rem 1rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+
+        tr:hover td {
+            background-color: #fafcff;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 2.5rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .badge-dept {
+            background: #f0f4f8;
+            padding: 0.2rem 0.7rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #0b2b4a;
+            display: inline-block;
+        }
+
+        .badge-status {
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            display: inline-block;
+        }
+
+        .badge-status.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .badge-status.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-mode {
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            display: inline-block;
+            background: #e6f0fa;
+            color: #0b2b4a;
+        }
+
+        /* ── Print Button ─────────────────────────────────────────── */
+        .print-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .print-btn {
+            background: #0b2b4a;
+            border: none;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 0.8rem 2.2rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(11, 43, 74, 0.12);
+            transition: all 0.2s;
+        }
+
+        .print-btn:hover {
+            background: #153e66;
+            transform: translateY(-1px);
+        }
+
+        /* ── PDF render zone (hidden) ────────────────────────────── */
+        #pdf-render-zone {
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
+            background: #ffffff !important;
+            margin: 0 auto;
+        }
+
+        body.printing-mode .app-wrapper {
+            display: none !important;
+        }
+        body:not(.printing-mode) #pdf-render-zone {
+            display: none !important;
+        }
+
+        /* ── Responsive ───────────────────────────────────────────── */
+        @media (max-width: 700px) {
+            .app-wrapper {
+                padding: 1.2rem;
+            }
+            .app-header h1 {
+                font-size: 1.3rem;
+            }
+            .nav-tab {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            .filter-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group {
+                justify-content: stretch;
+            }
+            .filter-select {
+                flex: 1;
+            }
+            .filter-btn,
+            .reset-btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .print-section {
+                justify-content: center;
+            }
+            .print-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper" id="appWrapper">
+
+        <!-- ─── HEADER ──────────────────────────────────────────── -->
+        <div class="app-header">
+            <div>
+                <h1>Mamburam · Admin</h1>
+                <span class="sub">Sheet dashboard &amp; transaction print</span>
+            </div>
+            <div style="font-size:0.85rem; color:#64748b;">
+                <span id="currentDate"></span>
+            </div>
+        </div>
+
+        <!-- ─── NAVBAR ──────────────────────────────────────────── -->
+        <div class="nav-tabs" id="navTabs">
+            <button class="nav-tab active" data-tab="tab-credentials">👤 Credentials</button>
+            <button class="nav-tab" data-tab="tab-registration">📋 Registration</button>
+            <button class="nav-tab" data-tab="tab-transaction-master">💳 Transaction Master</button>
+            <button class="nav-tab" data-tab="tab-union">🏛️ Union</button>
+            <button class="nav-tab" data-tab="tab-transactions">📊 Transactions</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- TAB 1 — user_credentials                                     -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="tab-content active" id="tab-credentials">
+            <div class="info-banner">
+                <span>🔐</span> <strong>User Credentials</strong> — username, password, full_name, role
+            </div>
+            <div class="stats-row">
+                <span class="stat-item">Total: <strong id="credCount">0</strong></span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Full Name</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody id="credBody">
+                        <tr><td colspan="5" class="empty-message">Loading credentials…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- TAB 2 — registration                                       -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="tab-content" id="tab-registration">
+            <div class="info-banner">
+                <span>📋</span> <strong>Registration</strong> — full_name, phone, gmail, registration_date
+            </div>
+            <div class="stats-row">
+                <span class="stat-item">Total: <strong id="regCount">0</strong></span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Full Name</th>
+                            <th>Phone</th>
+                            <th>Gmail</th>
+                            <th>Registration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="regBody">
+                        <tr><td colspan="5" class="empty-message">Loading registration…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- TAB 3 — transaction_master                                 -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="tab-content" id="tab-transaction-master">
+            <div class="info-banner">
+                <span>💳</span> <strong>Transaction Master</strong> — transaction_id, title, mode, amount, bill_url, date
+            </div>
+            <div class="stats-row">
+                <span class="stat-item">Total: <strong id="tmCount">0</strong></span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Transaction ID</th>
+                            <th>Title</th>
+                            <th>Mode</th>
+                            <th>Amount</th>
+                            <th>Bill URL</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tmBody">
+                        <tr><td colspan="7" class="empty-message">Loading transaction master…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- TAB 4 — union                                             -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="tab-content" id="tab-union">
+            <div class="info-banner">
+                <span>🏛️</span> <strong>Union</strong> — transaction_id, title, type, bill_url, status, amount, date, updated_at
+            </div>
+            <div class="stats-row">
+                <span class="stat-item">Total: <strong id="unionCount">0</strong></span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Transaction ID</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Bill URL</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Updated At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unionBody">
+                        <tr><td colspan="9" class="empty-message">Loading union…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- TAB 5 — transactions (16552 + nasik combined)             -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <div class="tab-content" id="tab-transactions">
+            <div class="info-banner">
+                <span>📊</span> <strong>Transactions</strong> — combined from 16552_transactions &amp; nasik_transactions
+                &nbsp;·&nbsp; filter by <strong>mode</strong> and <strong>status</strong>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel" id="txFilterPanel">
+                <div class="filter-group">
+                    <label>📌 Mode</label>
+                    <select class="filter-select" id="txModeFilter">
+                        <option value="all">All</option>
+                        <option value="to get">To Get</option>
+                        <option value="to give">To Give</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>📌 Status</label>
+                    <select class="filter-select" id="txStatusFilter">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="gap:0.5rem;">
+                    <button class="filter-btn" id="txApplyFilterBtn">Apply</button>
+                    <button class="reset-btn" id="txResetFilterBtn">Reset</button>
+                    <span class="count-badge" id="txCountBadge">All</span>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <span class="stat-item">Total: <strong id="txTotalCount">0</strong></span>
+                <span class="stat-item" style="background:#e6f0fa;">Filtered: <strong id="txFilteredCount">0</strong></span>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Transaction ID</th>
+                            <th>Mode</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Updated At</th>
+                            <th>Source</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txBody">
+                        <tr><td colspan="8" class="empty-message">Loading transactions…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Print button for transactions -->
+            <div class="print-section">
+                <button class="print-btn" id="txPrintBtn">
+                    <span>📄</span> Download Transactions PDF
+                </button>
+            </div>
+        </div>
+
+    </div>
+    <!-- end app-wrapper -->
+
+    <!-- ─── PDF RENDER ZONE ────────────────────────────────────────── -->
+    <div id="pdf-render-zone"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── CONFIG ──────────────────────────────────────────────────────────────
+            const SHEETS = {
+                credentials: {
+                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=0&single=true&output=csv',
+                    headings: ['username', 'password', 'full_name', 'role']
+                },
+                registration: {
+                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1165587820&single=true&output=csv',
+                    headings: ['full_name', 'phone', 'gmail', 'registration_date']
+                },
+                transaction_master: {
+                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1411745735&single=true&output=csv',
+                    headings: ['transaction_id', 'title', 'mode', 'amount', 'bill_url', 'date']
+                },
+                union: {
+                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=992781757&single=true&output=csv',
+                    headings: ['transaction_id', 'title', 'type', 'bill_url', 'status', 'amount', 'date', 'updated_at']
+                },
+                tx16552: {
+                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=677538142&single=true&output=csv',
+                    headings: ['transaction_id', 'mode', 'status', 'amount', 'date', 'updated_at'],
+                    source: '16552'
+                },
+                txNasik: {
+                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=456120809&single=true&output=csv',
+                    headings: ['transaction_id', 'mode', 'status', 'amount', 'date', 'updated_at'],
+                    source: 'Nasik'
+                }
+            };
+
+            // ─── STATE ──────────────────────────────────────────────────────────────
+            // Store raw data per sheet
+            const dataStore = {
+                credentials: [],
+                registration: [],
+                transaction_master: [],
+                union: [],
+                transactions: [] // combined from 16552 + nasik
+            };
+
+            // Filtered transactions (for display)
+            let filteredTransactions = [];
+
+            // ─── DOM REFS ────────────────────────────────────────────────────────────
+            const tabContents = document.querySelectorAll('.tab-content');
+            const navTabs = document.querySelectorAll('.nav-tab');
+
+            // Table bodies
+            const credBody = document.getElementById('credBody');
+            const regBody = document.getElementById('regBody');
+            const tmBody = document.getElementById('tmBody');
+            const unionBody = document.getElementById('unionBody');
+            const txBody = document.getElementById('txBody');
+
+            // Count spans
+            const credCount = document.getElementById('credCount');
+            const regCount = document.getElementById('regCount');
+            const tmCount = document.getElementById('tmCount');
+            const unionCount = document.getElementById('unionCount');
+            const txTotalCount = document.getElementById('txTotalCount');
+            const txFilteredCount = document.getElementById('txFilteredCount');
+            const txCountBadge = document.getElementById('txCountBadge');
+
+            // Transaction filters
+            const txModeFilter = document.getElementById('txModeFilter');
+            const txStatusFilter = document.getElementById('txStatusFilter');
+            const txApplyFilterBtn = document.getElementById('txApplyFilterBtn');
+            const txResetFilterBtn = document.getElementById('txResetFilterBtn');
+            const txPrintBtn = document.getElementById('txPrintBtn');
+
+            const currentDateEl = document.getElementById('currentDate');
+
+            // ─── HELPERS ──────────────────────────────────────────────────────────────
+            function escapeHTML(str) {
+                if (str === undefined || str === null) return '';
+                return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } [m] ||
+                    m));
+            }
+
+            function parseCSV(csvText) {
+                const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+                if (lines.length === 0) return [];
+
+                const cleanSplit = (row) => {
+                    const res = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < row.length; i++) {
+                        const ch = row[i];
+                        if (ch === '"') { inQuotes = !inQuotes; } else if (ch === ',' && !inQuotes) {
+                            res.push(current.trim());
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                    }
+                    res.push(current.trim());
+                    return res;
+                };
+
+                const headers = cleanSplit(lines[0]).map(h => h.toLowerCase().trim());
+                const rows = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = cleanSplit(lines[i]);
+                    const obj = {};
+                    headers.forEach((h, idx) => {
+                        obj[h] = (idx < cols.length) ? cols[idx] : '';
+                    });
+                    rows.push(obj);
+                }
+                return rows;
+            }
+
+            function fetchSheet(key) {
+                const config = SHEETS[key];
+                if (!config) return Promise.reject('Unknown sheet');
+                return fetch(config.url)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.text();
+                    })
+                    .then(csv => parseCSV(csv));
+            }
+
+            // ─── RENDER FUNCTIONS ────────────────────────────────────────────────────
+
+            function renderCredentials(data) {
+                if (!data || data.length === 0) {
+                    credBody.innerHTML = `<tr><td colspan="5" class="empty-message">No credentials found.</td></tr>`;
+                    credCount.textContent = '0';
+                    return;
+                }
+                let html = '';
+                data.forEach((row, i) => {
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td>${escapeHTML(row.username)}</td>
+                        <td>${escapeHTML(row.password)}</td>
+                        <td><strong>${escapeHTML(row.full_name)}</strong></td>
+                        <td><span class="badge-dept">${escapeHTML(row.role)}</span></td>
+                    </tr>`;
+                });
+                credBody.innerHTML = html;
+                credCount.textContent = data.length;
+            }
+
+            function renderRegistration(data) {
+                if (!data || data.length === 0) {
+                    regBody.innerHTML = `<tr><td colspan="5" class="empty-message">No registrations found.</td></tr>`;
+                    regCount.textContent = '0';
+                    return;
+                }
+                let html = '';
+                data.forEach((row, i) => {
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><strong>${escapeHTML(row.full_name)}</strong></td>
+                        <td>${escapeHTML(row.phone)}</td>
+                        <td>${escapeHTML(row.gmail)}</td>
+                        <td>${escapeHTML(row.registration_date)}</td>
+                    </tr>`;
+                });
+                regBody.innerHTML = html;
+                regCount.textContent = data.length;
+            }
+
+            function renderTransactionMaster(data) {
+                if (!data || data.length === 0) {
+                    tmBody.innerHTML = `<tr><td colspan="7" class="empty-message">No transaction master records.</td></tr>`;
+                    tmCount.textContent = '0';
+                    return;
+                }
+                let html = '';
+                data.forEach((row, i) => {
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><code>${escapeHTML(row.transaction_id)}</code></td>
+                        <td><strong>${escapeHTML(row.title)}</strong></td>
+                        <td><span class="badge-mode">${escapeHTML(row.mode)}</span></td>
+                        <td>${escapeHTML(row.amount)}</td>
+                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(row.bill_url)}</td>
+                        <td>${escapeHTML(row.date)}</td>
+                    </tr>`;
+                });
+                tmBody.innerHTML = html;
+                tmCount.textContent = data.length;
+            }
+
+            function renderUnion(data) {
+                if (!data || data.length === 0) {
+                    unionBody.innerHTML = `<tr><td colspan="9" class="empty-message">No union records found.</td></tr>`;
+                    unionCount.textContent = '0';
+                    return;
+                }
+                let html = '';
+                data.forEach((row, i) => {
+                    const status = String(row.status || '').toLowerCase();
+                    let statusClass = 'badge-status';
+                    if (status === 'pending') statusClass += ' pending';
+                    else if (status === 'completed') statusClass += ' completed';
+                    else if (status === 'cancelled') statusClass += ' cancelled';
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><code>${escapeHTML(row.transaction_id)}</code></td>
+                        <td><strong>${escapeHTML(row.title)}</strong></td>
+                        <td>${escapeHTML(row.type)}</td>
+                        <td style="max-width:100px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(row.bill_url)}</td>
+                        <td><span class="${statusClass}">${escapeHTML(row.status)}</span></td>
+                        <td>${escapeHTML(row.amount)}</td>
+                        <td>${escapeHTML(row.date)}</td>
+                        <td>${escapeHTML(row.updated_at)}</td>
+                    </tr>`;
+                });
+                unionBody.innerHTML = html;
+                unionCount.textContent = data.length;
+            }
+
+            function renderTransactions(data) {
+                if (!data || data.length === 0) {
+                    txBody.innerHTML = `<tr><td colspan="8" class="empty-message">No transactions found.</td></tr>`;
+                    txTotalCount.textContent = '0';
+                    txFilteredCount.textContent = '0';
+                    txCountBadge.textContent = '0';
+                    return;
+                }
+                let html = '';
+                data.forEach((row, i) => {
+                    const status = String(row.status || '').toLowerCase();
+                    let statusClass = 'badge-status';
+                    if (status === 'pending') statusClass += ' pending';
+                    else if (status === 'completed') statusClass += ' completed';
+                    else if (status === 'cancelled') statusClass += ' cancelled';
+                    const mode = String(row.mode || '').toLowerCase();
+                    html += `<tr>
+                        <td>${i + 1}</td>
+                        <td><code>${escapeHTML(row.transaction_id)}</code></td>
+                        <td><span class="badge-mode">${escapeHTML(row.mode)}</span></td>
+                        <td><span class="${statusClass}">${escapeHTML(row.status)}</span></td>
+                        <td>${escapeHTML(row.amount)}</td>
+                        <td>${escapeHTML(row.date)}</td>
+                        <td>${escapeHTML(row.updated_at)}</td>
+                        <td><span class="badge-dept">${escapeHTML(row.source)}</span></td>
+                    </tr>`;
+                });
+                txBody.innerHTML = html;
+                txTotalCount.textContent = dataStore.transactions.length;
+                txFilteredCount.textContent = data.length;
+                txCountBadge.textContent = data.length === dataStore.transactions.length ?
+                    `All ${data.length}` :
+                    `${data.length} / ${dataStore.transactions.length}`;
+            }
+
+            // ─── TRANSACTION FILTER LOGIC ───────────────────────────────────────────
+
+            function applyTransactionFilters() {
+                const modeVal = txModeFilter.value.toLowerCase();
+                const statusVal = txStatusFilter.value.toLowerCase();
+                const all = dataStore.transactions;
+
+                let filtered = all.filter(row => {
+                    const rowMode = String(row.mode || '').toLowerCase();
+                    const rowStatus = String(row.status || '').toLowerCase();
+                    let match = true;
+                    if (modeVal !== 'all' && rowMode !== modeVal) match = false;
+                    if (statusVal !== 'all' && rowStatus !== statusVal) match = false;
+                    return match;
+                });
+
+                filteredTransactions = filtered;
+                renderTransactions(filtered);
+            }
+
+            // ─── LOAD ALL SHEETS ─────────────────────────────────────────────────────
+
+            function loadAllSheets() {
+                const promises = [
+                    fetchSheet('credentials').then(d => { dataStore.credentials = d;
+                        renderCredentials(d); }),
+                    fetchSheet('registration').then(d => { dataStore.registration = d;
+                        renderRegistration(d); }),
+                    fetchSheet('transaction_master').then(d => { dataStore.transaction_master = d;
+                        renderTransactionMaster(d); }),
+                    fetchSheet('union').then(d => { dataStore.union = d;
+                        renderUnion(d); }),
+                    fetchSheet('tx16552').then(d => {
+                        d.forEach(r => r.source = '16552');
+                        return d;
+                    }),
+                    fetchSheet('txNasik').then(d => {
+                        d.forEach(r => r.source = 'Nasik');
+                        return d;
+                    })
+                ];
+
+                Promise.all(promises)
+                    .then(results => {
+                        // combine transactions
+                        const tx16552 = results[4] || [];
+                        const txNasik = results[5] || [];
+                        const combined = [...tx16552, ...txNasik];
+                        dataStore.transactions = combined;
+                        filteredTransactions = [...combined];
+                        renderTransactions(combined);
+                    })
+                    .catch(err => {
+                        console.error('Load error:', err);
+                        // show error in transaction table
+                        txBody.innerHTML =
+                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load transaction sheets.</td></tr>`;
+                    });
+            }
+
+            // ─── NAVIGATION ──────────────────────────────────────────────────────────
+
+            function switchTab(tabId) {
+                // update nav buttons
+                navTabs.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabId);
+                });
+                // update content
+                tabContents.forEach(el => {
+                    el.classList.toggle('active', el.id === tabId);
+                });
+            }
+
+            navTabs.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchTab(this.dataset.tab);
+                });
+            });
+
+            // ─── DATE ─────────────────────────────────────────────────────────────────
+
+            function setCurrentDate() {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                currentDateEl.textContent = `${d}-${m}-${y}`;
+            }
+
+            // ─── TRANSACTION FILTER EVENTS ─────────────────────────────────────────
+
+            txApplyFilterBtn.addEventListener('click', applyTransactionFilters);
+            txResetFilterBtn.addEventListener('click', function() {
+                txModeFilter.value = 'all';
+                txStatusFilter.value = 'all';
+                applyTransactionFilters();
+            });
+
+            // ─── PRINT PDF (Transactions) ──────────────────────────────────────────
+
+            function generateTransactionsPDF() {
+                const data = filteredTransactions;
+                if (!data || data.length === 0) {
+                    alert('No transaction data to print.');
+                    return;
+                }
+
+                const today = new Date();
+                const dateStr =
+                    `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+
+                const PER_PAGE = 25;
+                const total = data.length;
+                const totalPages = Math.ceil(total / PER_PAGE);
+
+                let pagesHTML = '';
+                for (let page = 0; page < totalPages; page++) {
+                    const start = page * PER_PAGE;
+                    const end = Math.min(start + PER_PAGE, total);
+                    const pageData = data.slice(start, end);
+
+                    let rowsHTML = '';
+                    pageData.forEach((row, idx) => {
+                        const globalIdx = start + idx + 1;
+                        const status = String(row.status || '').toLowerCase();
+                        const statusDisplay = row.status || '-';
+                        const modeDisplay = row.mode || '-';
+                        rowsHTML += `
+                            <tr style="border-bottom:1px solid #d1d5db;">
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${globalIdx}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(modeDisplay)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(statusDisplay)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.source)}</td>
+                            </tr>`;
+                    });
+
+                    const pageBreak = (page < totalPages - 1) ? 'page-break-after: always !important;' : '';
+
+                    pagesHTML += `
+                        <div style="padding:40px 45px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
+                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:22px;">
+                                <h1 style="font-size:24px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">TRANSACTIONS STATUS</h1>
+                                <p style="font-size:14px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
+                                <thead>
+                                    <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:8%;">#</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Tx ID</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Mode</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:16%;">Status</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Amount</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Date</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:16%;">Updated</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:10%;">Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHTML}
+                                </tbody>
+                            </table>
+                            <div style="margin-top:25px; border-top:1px solid #000; padding-top:10px; display:flex; justify-content:space-between; font-size:11px; font-weight:bold; color:#475569;">
+                                <div>Total: ${total} · Page ${page+1} of ${totalPages}</div>
+                                <div>Mamburam · Transactions</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const zone = document.getElementById('pdf-render-zone');
+                zone.innerHTML = pagesHTML;
+                document.body.classList.add('printing-mode');
+
+                const opt = {
+                    margin: 0,
+                    filename: `Transactions_Status_${dateStr}.pdf`,
+                    image: { type: 'jpeg', quality: 1.0 },
+                    html2canvas: { scale: 2.5, logging: false, useCORS: true, scrollX: 0, scrollY: 0 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                };
+
+                html2pdf().set(opt).from(zone).save()
+                    .then(() => {
+                        document.body.classList.remove('printing-mode');
+                        zone.innerHTML = '';
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        document.body.classList.remove('printing-mode');
+                        zone.innerHTML = '';
+                        alert('PDF generation failed.');
+                    });
+            }
+
+            txPrintBtn.addEventListener('click', generateTransactionsPDF);
+
+            // ─── BOOT ──────────────────────────────────────────────────────────────────
+
+            setCurrentDate();
+            loadAllSheets();
+
+            // re-apply transaction filter whenever filters change (via button)
+            // also on load we already rendered all
+
+            // small extra: if user presses Enter in filter selects, apply
+            [txModeFilter, txStatusFilter].forEach(el => {
+                el.addEventListener('change', applyTransactionFilters);
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
