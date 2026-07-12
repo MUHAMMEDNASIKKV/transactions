@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>Nadha · Print Dashboard</title>
+    <title>Nadha · Admin Dashboard</title>
     <!-- html2pdf library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
     </script>
@@ -26,7 +26,7 @@
         }
 
         .app-wrapper {
-            max-width: 1300px;
+            max-width: 1400px;
             width: 100%;
             background: #ffffff;
             border-radius: 28px;
@@ -151,7 +151,7 @@
             color: #0b2b4a;
         }
 
-        /* ── Filter Panel ─────────────────────────────────────────── */
+        /* ── Filter Panel ──────────────────────────────────────────── */
         .filter-panel {
             display: flex;
             align-items: center;
@@ -281,6 +281,7 @@
             font-style: italic;
         }
 
+        /* ── Badge: Dept / Source ─────────────────────────────────── */
         .badge-dept {
             background: #f0f4f8;
             padding: 0.2rem 0.7rem;
@@ -291,30 +292,76 @@
             display: inline-block;
         }
 
-        /* ── Type badges with colors ─────────────────────────────── */
-        .badge-type {
-            padding: 0.2rem 0.9rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: capitalize;
-            display: inline-block;
-            color: #fff;
-        }
-        .badge-type.hard { background: #f97316; }      /* orange */
-        .badge-type.soft { background: #3b82f6; }      /* blue */
-        .badge-type.toget { background: #22c55e; }     /* green */
-        .badge-type.togive { background: #ef4444; }    /* red */
-
-        .badge-mode {
+        /* ── Status Badge (transactions) ──────────────────────────── */
+        .badge-status {
             padding: 0.2rem 0.7rem;
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: capitalize;
             display: inline-block;
-            background: #e6f0fa;
+        }
+        .badge-status.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .badge-status.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-status.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ── Mode / Type Color Badges ────────────────────────────── */
+        .badge-mode {
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            display: inline-block;
+            border: 1px solid transparent;
+        }
+        .badge-mode.to-get {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+        .badge-mode.to-give {
+            background: #fee2e2;
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+        .badge-mode.hard {
+            background: #ffedd5;
+            color: #9a3412;
+            border-color: #fdba74;
+        }
+        .badge-mode.soft {
+            background: #dbeafe;
+            color: #1e40af;
+            border-color: #93c5fd;
+        }
+        /* fallback */
+        .badge-mode.default {
+            background: #f1f5f9;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+
+        /* ── Link "view" ──────────────────────────────────────────── */
+        .view-link {
             color: #0b2b4a;
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .view-link:hover {
+            color: #1e3b5a;
         }
 
         /* ── Print Button ─────────────────────────────────────────── */
@@ -322,6 +369,8 @@
             display: flex;
             justify-content: flex-end;
             margin-top: 1.5rem;
+            gap: 0.8rem;
+            flex-wrap: wrap;
         }
 
         .print-btn {
@@ -405,8 +454,8 @@
         <!-- ─── HEADER ──────────────────────────────────────────── -->
         <div class="app-header">
             <div>
-                <h1>Nadha · Print</h1>
-                <span class="sub">Union &amp; Transactions</span>
+                <h1>Nadha · Admin</h1>
+                <span class="sub">Union &amp; Transactions dashboard</span>
             </div>
             <div style="font-size:0.85rem; color:#64748b;">
                 <span id="currentDate"></span>
@@ -420,20 +469,24 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 1 — union (filter by type)                           -->
+        <!-- TAB 1 — UNION                                              -->
         <!-- ═══════════════════════════════════════════════════════════ -->
         <div class="tab-content active" id="tab-union">
+            <div class="info-banner">
+                <span>🏛️</span> <strong>Union</strong> — transaction_id, title, type, bill_url, amount, date, updated_at
+                &nbsp;·&nbsp; filter by <strong>type</strong>
+            </div>
 
-            <!-- Filter Panel for Union -->
+            <!-- Filter Panel -->
             <div class="filter-panel" id="unionFilterPanel">
                 <div class="filter-group">
                     <label>📌 Type</label>
                     <select class="filter-select" id="unionTypeFilter">
                         <option value="all">All</option>
-                        <option value="hard">Hard</option>
-                        <option value="soft">Soft</option>
                         <option value="to get">To Get</option>
                         <option value="to give">To Give</option>
+                        <option value="hard">Hard</option>
+                        <option value="soft">Soft</option>
                     </select>
                 </div>
                 <div class="filter-group" style="gap:0.5rem;">
@@ -468,7 +521,7 @@
                 </table>
             </div>
 
-            <!-- Print button for union -->
+            <!-- Print button for Union -->
             <div class="print-section">
                 <button class="print-btn" id="unionPrintBtn">
                     <span>📄</span> Download Union PDF
@@ -477,12 +530,45 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 2 — transactions (all user sheets)                   -->
+        <!-- TAB 2 — TRANSACTIONS (all user sheets)                    -->
         <!-- ═══════════════════════════════════════════════════════════ -->
         <div class="tab-content" id="tab-transactions">
+            <div class="info-banner">
+                <span>📊</span> <strong>Transactions</strong> — combined from all user transaction sheets
+                &nbsp;·&nbsp; filter by <strong>mode</strong> and <strong>status</strong>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel" id="txFilterPanel">
+                <div class="filter-group">
+                    <label>📌 Mode</label>
+                    <select class="filter-select" id="txModeFilter">
+                        <option value="all">All</option>
+                        <option value="to get">To Get</option>
+                        <option value="to give">To Give</option>
+                        <option value="hard">Hard</option>
+                        <option value="soft">Soft</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>📌 Status</label>
+                    <select class="filter-select" id="txStatusFilter">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="gap:0.5rem;">
+                    <button class="filter-btn" id="txApplyFilterBtn">Apply</button>
+                    <button class="reset-btn" id="txResetFilterBtn">Reset</button>
+                    <span class="count-badge" id="txCountBadge">All</span>
+                </div>
+            </div>
 
             <div class="stats-row">
                 <span class="stat-item">Total: <strong id="txTotalCount">0</strong></span>
+                <span class="stat-item" style="background:#e6f0fa;">Filtered: <strong id="txFilteredCount">0</strong></span>
             </div>
 
             <div class="table-responsive">
@@ -492,14 +578,16 @@
                             <th>#</th>
                             <th>Transaction ID</th>
                             <th>Mode</th>
+                            <th>Status</th>
                             <th>Amount</th>
                             <th>Date</th>
                             <th>Updated At</th>
-                            <th>User</th>
+                            <th>Bill URL</th>
+                            <th>Source</th>
                         </tr>
                     </thead>
                     <tbody id="txBody">
-                        <tr><td colspan="7" class="empty-message">Loading transactions…</td></tr>
+                        <tr><td colspan="9" class="empty-message">Loading transactions…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -523,83 +611,91 @@
             'use strict';
 
             // ─── CONFIG ──────────────────────────────────────────────────────────────
-            const SHEETS = {
-                union: {
-                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=992781757&single=true&output=csv',
-                    headings: ['transaction_id', 'title', 'type', 'bill_url', 'amount', 'date', 'updated_at']
-                },
-                // user transaction sheets
-                userSheets: [
-                    { name: 'Swalih KT', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=644558866&single=true&output=csv' },
-                    { name: 'Fayis', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=2116518035&single=true&output=csv' },
-                    { name: 'Sinan EK', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1042137901&single=true&output=csv' },
-                    { name: 'Bishr', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1376408358&single=true&output=csv' },
-                    { name: 'Basith C', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1487251346&single=true&output=csv' },
-                    { name: 'Arshad U', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1122744580&single=true&output=csv' },
-                    { name: 'Arshad CK', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=350578566&single=true&output=csv' },
-                    { name: 'Anshif M', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=341305796&single=true&output=csv' },
-                    { name: 'Anshif K', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=710267574&single=true&output=csv' },
-                    { name: 'Anas', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1250373344&single=true&output=csv' },
-                    { name: 'Althaf', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1855200102&single=true&output=csv' },
-                    { name: 'Afeef', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=863807353&single=true&output=csv' },
-                    { name: 'Aboobacker', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1694310975&single=true&output=csv' },
-                    { name: 'Saeed', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=110241602&single=true&output=csv' },
-                    { name: 'Naeem AP', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1066525434&single=true&output=csv' },
-                    { name: 'Akhnas', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1942688598&single=true&output=csv' },
-                    { name: 'Shamil', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=6645382&single=true&output=csv' },
-                    { name: 'Shaheem', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=48351995&single=true&output=csv' },
-                    { name: 'Sha Safar', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=160780710&single=true&output=csv' },
-                    { name: 'Sabith', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1568534210&single=true&output=csv' },
-                    { name: 'Rizil', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=429244218&single=true&output=csv' },
-                    { name: 'Rashid', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=791931666&single=true&output=csv' },
-                    { name: 'Nafi', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=722598451&single=true&output=csv' },
-                    { name: 'Naeem M', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=531698611&single=true&output=csv' },
-                    { name: 'Thufail', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1235206893&single=true&output=csv' },
-                    { name: 'Thanveer', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=74793820&single=true&output=csv' },
-                    { name: 'Swalih M', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1028776902&single=true&output=csv' },
-                    { name: 'Swalih K', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=691156219&single=true&output=csv' },
-                    { name: 'Musharraf', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=15352283&single=true&output=csv' },
-                    { name: 'Murshid', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=81901715&single=true&output=csv' },
-                    { name: 'Muqthar', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1320084366&single=true&output=csv' },
-                    { name: 'Yoonus', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=394165321&single=true&output=csv' },
-                    { name: 'Midlaj', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1149357257&single=true&output=csv' },
-                    { name: 'Jazal', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=869948528&single=true&output=csv' },
-                    { name: 'Hisham', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1463142939&single=true&output=csv' },
-                    { name: 'Habeeb', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=891306587&single=true&output=csv' },
-                    { name: 'Galib', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=933706377&single=true&output=csv' },
-                    { name: 'muhsin', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1973975096&single=true&output=csv' }
-                ]
+
+            // Union sheet
+            const UNION_SHEET = {
+                url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=992781757&single=true&output=csv',
+                headings: ['transaction_id', 'title', 'type', 'bill_url', 'amount', 'date', 'updated_at']
+            };
+
+            // All user transaction sheets (source name → URL)
+            const USER_TRANSACTION_SHEETS = {
+                'Swalih KT': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=644558866&single=true&output=csv',
+                'Fayis': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=2116518035&single=true&output=csv',
+                'Sinan EK': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1042137901&single=true&output=csv',
+                'Bishr': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1376408358&single=true&output=csv',
+                'Basith C': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1487251346&single=true&output=csv',
+                'Arshad U': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1122744580&single=true&output=csv',
+                'Arshad CK': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=350578566&single=true&output=csv',
+                'Anshif M': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=341305796&single=true&output=csv',
+                'Anshif K': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=710267574&single=true&output=csv',
+                'Anas': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1250373344&single=true&output=csv',
+                'Althaf': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1855200102&single=true&output=csv',
+                'Afeef': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=863807353&single=true&output=csv',
+                'Aboobacker': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1694310975&single=true&output=csv',
+                'Saeed': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=110241602&single=true&output=csv',
+                'Naeem AP': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1066525434&single=true&output=csv',
+                'Akhnas': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1942688598&single=true&output=csv',
+                'Shamil': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=6645382&single=true&output=csv',
+                'Shaheem': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=48351995&single=true&output=csv',
+                'Sha Safar': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=160780710&single=true&output=csv',
+                'Sabith': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1568534210&single=true&output=csv',
+                'Rizil': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=429244218&single=true&output=csv',
+                'Rashid': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=791931666&single=true&output=csv',
+                'Nafi': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=722598451&single=true&output=csv',
+                'Naeem M': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=531698611&single=true&output=csv',
+                'Thufail': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1235206893&single=true&output=csv',
+                'Thanveer': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=74793820&single=true&output=csv',
+                'Swalih M': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1028776902&single=true&output=csv',
+                'Swalih K': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=691156219&single=true&output=csv',
+                'Musharraf': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=15352283&single=true&output=csv',
+                'Murshid': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=81901715&single=true&output=csv',
+                'Muqthar': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1320084366&single=true&output=csv',
+                'Yoonus': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=394165321&single=true&output=csv',
+                'Midlaj': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1149357257&single=true&output=csv',
+                'Jazal': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=869948528&single=true&output=csv',
+                'Hisham': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1463142939&single=true&output=csv',
+                'Habeeb': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=891306587&single=true&output=csv',
+                'Galib': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=933706377&single=true&output=csv',
+                'Muhsin': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1973975096&single=true&output=csv'
             };
 
             // ─── STATE ──────────────────────────────────────────────────────────────
-            const dataStore = {
-                union: [],
-                transactions: []
-            };
-
+            let unionData = [];
             let filteredUnion = [];
+
+            let allTransactions = []; // combined from all user sheets
+            let filteredTransactions = [];
 
             // ─── DOM REFS ────────────────────────────────────────────────────────────
             const tabContents = document.querySelectorAll('.tab-content');
             const navTabs = document.querySelectorAll('.nav-tab');
 
+            // Union
             const unionBody = document.getElementById('unionBody');
-            const txBody = document.getElementById('txBody');
-
             const unionTotalCount = document.getElementById('unionTotalCount');
             const unionFilteredCount = document.getElementById('unionFilteredCount');
             const unionCountBadge = document.getElementById('unionCountBadge');
-            const txTotalCount = document.getElementById('txTotalCount');
-
             const unionTypeFilter = document.getElementById('unionTypeFilter');
             const unionApplyFilterBtn = document.getElementById('unionApplyFilterBtn');
             const unionResetFilterBtn = document.getElementById('unionResetFilterBtn');
             const unionPrintBtn = document.getElementById('unionPrintBtn');
+
+            // Transactions
+            const txBody = document.getElementById('txBody');
+            const txTotalCount = document.getElementById('txTotalCount');
+            const txFilteredCount = document.getElementById('txFilteredCount');
+            const txCountBadge = document.getElementById('txCountBadge');
+            const txModeFilter = document.getElementById('txModeFilter');
+            const txStatusFilter = document.getElementById('txStatusFilter');
+            const txApplyFilterBtn = document.getElementById('txApplyFilterBtn');
+            const txResetFilterBtn = document.getElementById('txResetFilterBtn');
             const txPrintBtn = document.getElementById('txPrintBtn');
 
             const currentDateEl = document.getElementById('currentDate');
 
             // ─── HELPERS ──────────────────────────────────────────────────────────────
+
             function escapeHTML(str) {
                 if (str === undefined || str === null) return '';
                 return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } [m] ||
@@ -649,19 +745,27 @@
                     .then(csv => parseCSV(csv));
             }
 
-            // ─── TYPE BADGE HELPER ──────────────────────────────────────────────────
-            function getTypeBadge(type) {
-                const t = String(type || '').toLowerCase();
-                let cls = 'badge-type';
-                if (t === 'hard') cls += ' hard';
-                else if (t === 'soft') cls += ' soft';
-                else if (t === 'to get') cls += ' toget';
-                else if (t === 'to give') cls += ' togive';
-                else cls += ' soft'; // fallback
-                return `<span class="${cls}">${escapeHTML(type)}</span>`;
+            // ─── MODE / TYPE COLOR CLASS ────────────────────────────────────────────
+
+            function getModeClass(val) {
+                if (!val) return 'default';
+                const v = String(val).toLowerCase().trim();
+                if (v === 'to get' || v === 'toget') return 'to-get';
+                if (v === 'to give' || v === 'togive') return 'to-give';
+                if (v === 'hard') return 'hard';
+                if (v === 'soft') return 'soft';
+                return 'default';
             }
 
-            // ─── RENDER FUNCTIONS ────────────────────────────────────────────────────
+            // ─── BILL URL LINK ──────────────────────────────────────────────────────
+
+            function renderBillLink(url) {
+                if (!url || url.trim() === '') return '—';
+                const clean = url.trim();
+                return `<a href="${escapeHTML(clean)}" target="_blank" class="view-link">view</a>`;
+            }
+
+            // ─── RENDER: UNION ──────────────────────────────────────────────────────
 
             function renderUnion(data) {
                 if (!data || data.length === 0) {
@@ -671,108 +775,157 @@
                     unionCountBadge.textContent = '0';
                     return;
                 }
+
                 let html = '';
                 data.forEach((row, i) => {
-                    const billUrl = row.bill_url ? row.bill_url.trim() : '';
-                    const billDisplay = billUrl ? 
-                        `<a href="${escapeHTML(billUrl)}" target="_blank" style="color:#0b2b4a; text-decoration:underline;">View</a>` :
-                        '-';
+                    const typeVal = row.type || '';
+                    const modeCls = getModeClass(typeVal);
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
                         <td><strong>${escapeHTML(row.title)}</strong></td>
-                        <td>${getTypeBadge(row.type)}</td>
-                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis;">${billDisplay}</td>
+                        <td><span class="badge-mode ${modeCls}">${escapeHTML(typeVal)}</span></td>
+                        <td>${renderBillLink(row.bill_url)}</td>
                         <td>${escapeHTML(row.amount)}</td>
                         <td>${escapeHTML(row.date)}</td>
                         <td>${escapeHTML(row.updated_at)}</td>
                     </tr>`;
                 });
+
                 unionBody.innerHTML = html;
-                unionTotalCount.textContent = dataStore.union.length;
+                unionTotalCount.textContent = unionData.length;
                 unionFilteredCount.textContent = data.length;
-                unionCountBadge.textContent = data.length === dataStore.union.length ?
+                const total = unionData.length;
+                unionCountBadge.textContent = data.length === total ?
                     `All ${data.length}` :
-                    `${data.length} / ${dataStore.union.length}`;
+                    `${data.length} / ${total}`;
             }
+
+            // ─── RENDER: TRANSACTIONS ──────────────────────────────────────────────
 
             function renderTransactions(data) {
                 if (!data || data.length === 0) {
-                    txBody.innerHTML = `<tr><td colspan="7" class="empty-message">No transactions found.</td></tr>`;
+                    txBody.innerHTML = `<tr><td colspan="9" class="empty-message">No transactions found.</td></tr>`;
                     txTotalCount.textContent = '0';
+                    txFilteredCount.textContent = '0';
+                    txCountBadge.textContent = '0';
                     return;
                 }
+
                 let html = '';
                 data.forEach((row, i) => {
+                    const modeVal = row.mode || '';
+                    const modeCls = getModeClass(modeVal);
+
+                    const statusVal = String(row.status || '').toLowerCase();
+                    let statusCls = 'badge-status';
+                    if (statusVal === 'pending') statusCls += ' pending';
+                    else if (statusVal === 'completed') statusCls += ' completed';
+                    else if (statusVal === 'cancelled') statusCls += ' cancelled';
+
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
-                        <td><span class="badge-mode">${escapeHTML(row.mode)}</span></td>
+                        <td><span class="badge-mode ${modeCls}">${escapeHTML(modeVal)}</span></td>
+                        <td><span class="${statusCls}">${escapeHTML(row.status)}</span></td>
                         <td>${escapeHTML(row.amount)}</td>
                         <td>${escapeHTML(row.date)}</td>
                         <td>${escapeHTML(row.updated_at)}</td>
-                        <td><span class="badge-dept">${escapeHTML(row.user)}</span></td>
+                        <td>${renderBillLink(row.bill_url)}</td>
+                        <td><span class="badge-dept">${escapeHTML(row.source)}</span></td>
                     </tr>`;
                 });
+
                 txBody.innerHTML = html;
-                txTotalCount.textContent = data.length;
+                txTotalCount.textContent = allTransactions.length;
+                txFilteredCount.textContent = data.length;
+                const total = allTransactions.length;
+                txCountBadge.textContent = data.length === total ?
+                    `All ${data.length}` :
+                    `${data.length} / ${total}`;
             }
 
-            // ─── FILTER LOGIC ────────────────────────────────────────────────────────
+            // ─── FILTER: UNION ──────────────────────────────────────────────────────
 
             function applyUnionFilters() {
-                const typeVal = unionTypeFilter.value.toLowerCase();
-                const all = dataStore.union;
+                const typeVal = unionTypeFilter.value.toLowerCase().trim();
+                const all = unionData;
 
                 let filtered = all.filter(row => {
-                    const rowType = String(row.type || '').toLowerCase();
-                    if (typeVal !== 'all' && rowType !== typeVal) return false;
-                    return true;
+                    const rowType = String(row.type || '').toLowerCase().trim();
+                    if (typeVal === 'all') return true;
+                    return rowType === typeVal;
                 });
 
                 filteredUnion = filtered;
                 renderUnion(filtered);
             }
 
-            // ─── LOAD ALL DATA ─────────────────────────────────────────────────────
+            // ─── FILTER: TRANSACTIONS ──────────────────────────────────────────────
+
+            function applyTransactionFilters() {
+                const modeVal = txModeFilter.value.toLowerCase().trim();
+                const statusVal = txStatusFilter.value.toLowerCase().trim();
+                const all = allTransactions;
+
+                let filtered = all.filter(row => {
+                    const rowMode = String(row.mode || '').toLowerCase().trim();
+                    const rowStatus = String(row.status || '').toLowerCase().trim();
+                    let match = true;
+                    if (modeVal !== 'all' && rowMode !== modeVal) match = false;
+                    if (statusVal !== 'all' && rowStatus !== statusVal) match = false;
+                    return match;
+                });
+
+                filteredTransactions = filtered;
+                renderTransactions(filtered);
+            }
+
+            // ─── LOAD DATA ──────────────────────────────────────────────────────────
 
             function loadAllData() {
-                // load union
-                fetchSheet(SHEETS.union.url)
+                // 1. Load Union
+                fetchSheet(UNION_SHEET.url)
                     .then(data => {
-                        dataStore.union = data;
+                        unionData = data;
                         filteredUnion = [...data];
                         renderUnion(data);
                     })
                     .catch(err => {
                         console.error('Union load error:', err);
                         unionBody.innerHTML =
-                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load union data.</td></tr>`;
+                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load union sheet.</td></tr>`;
                     });
 
-                // load all user transaction sheets
-                const userPromises = SHEETS.userSheets.map(sheet =>
-                    fetchSheet(sheet.url)
-                    .then(data => {
-                        data.forEach(row => row.user = sheet.name);
-                        return data;
-                    })
-                    .catch(err => {
-                        console.error(`Error loading ${sheet.name}:`, err);
-                        return [];
-                    })
-                );
+                // 2. Load all user transaction sheets
+                const sheetKeys = Object.keys(USER_TRANSACTION_SHEETS);
+                const fetchPromises = sheetKeys.map(source => {
+                    const url = USER_TRANSACTION_SHEETS[source];
+                    return fetchSheet(url)
+                        .then(rows => {
+                            rows.forEach(r => r.source = source);
+                            return rows;
+                        })
+                        .catch(err => {
+                            console.warn(`Failed to load ${source}:`, err);
+                            return [];
+                        });
+                });
 
-                Promise.all(userPromises)
+                Promise.all(fetchPromises)
                     .then(results => {
-                        const combined = results.flat();
-                        dataStore.transactions = combined;
+                        const combined = [];
+                        results.forEach(rows => {
+                            combined.push(...rows);
+                        });
+                        allTransactions = combined;
+                        filteredTransactions = [...combined];
                         renderTransactions(combined);
                     })
                     .catch(err => {
                         console.error('Transactions load error:', err);
                         txBody.innerHTML =
-                            `<tr><td colspan="7" class="empty-message">⚠️ Failed to load transactions.</td></tr>`;
+                            `<tr><td colspan="9" class="empty-message">⚠️ Failed to load transaction sheets.</td></tr>`;
                     });
             }
 
@@ -803,7 +956,7 @@
                 currentDateEl.textContent = `${d}-${m}-${y}`;
             }
 
-            // ─── FILTER EVENTS ─────────────────────────────────────────────────────
+            // ─── UNION FILTER EVENTS ──────────────────────────────────────────────
 
             unionApplyFilterBtn.addEventListener('click', applyUnionFilters);
             unionResetFilterBtn.addEventListener('click', function() {
@@ -812,7 +965,18 @@
             });
             unionTypeFilter.addEventListener('change', applyUnionFilters);
 
-            // ─── PRINT PDF ──────────────────────────────────────────────────────────
+            // ─── TRANSACTION FILTER EVENTS ────────────────────────────────────────
+
+            txApplyFilterBtn.addEventListener('click', applyTransactionFilters);
+            txResetFilterBtn.addEventListener('click', function() {
+                txModeFilter.value = 'all';
+                txStatusFilter.value = 'all';
+                applyTransactionFilters();
+            });
+            txModeFilter.addEventListener('change', applyTransactionFilters);
+            txStatusFilter.addEventListener('change', applyTransactionFilters);
+
+            // ─── PRINT: UNION PDF ──────────────────────────────────────────────────
 
             function generateUnionPDF() {
                 const data = filteredUnion;
@@ -838,49 +1002,44 @@
                     let rowsHTML = '';
                     pageData.forEach((row, idx) => {
                         const globalIdx = start + idx + 1;
-                        const billUrl = row.bill_url ? row.bill_url.trim() : '';
-                        const billDisplay = billUrl ? 
-                            `<a href="${escapeHTML(billUrl)}" target="_blank" style="color:#0b2b4a; text-decoration:underline;">View</a>` :
-                            '-';
+                        const typeVal = row.type || '-';
                         rowsHTML += `
                             <tr style="border-bottom:1px solid #d1d5db;">
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${globalIdx}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.type)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${billDisplay}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${globalIdx}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(typeVal)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
                             </tr>`;
                     });
 
                     const pageBreak = (page < totalPages - 1) ? 'page-break-after: always !important;' : '';
 
                     pagesHTML += `
-                        <div style="padding:40px 45px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
-                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:22px;">
-                                <h1 style="font-size:24px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">UNION STATUS</h1>
-                                <p style="font-size:14px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
+                        <div style="padding:35px 40px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
+                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:20px;">
+                                <h1 style="font-size:22px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">UNION · TYPE STATUS</h1>
+                                <p style="font-size:13px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
                             </div>
                             <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
                                 <thead>
                                     <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:6%;">#</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Tx ID</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Title</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:12%;">Type</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Bill URL</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:12%;">Amount</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:10%;">Date</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:10%;">Updated</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:6%;">#</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:16%;">Tx ID</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:20%;">Title</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Type</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Amount</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Date</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Updated</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${rowsHTML}
                                 </tbody>
                             </table>
-                            <div style="margin-top:25px; border-top:1px solid #000; padding-top:10px; display:flex; justify-content:space-between; font-size:11px; font-weight:bold; color:#475569;">
+                            <div style="margin-top:20px; border-top:1px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:10px; font-weight:bold; color:#475569;">
                                 <div>Total: ${total} · Page ${page+1} of ${totalPages}</div>
                                 <div>Nadha · Union</div>
                             </div>
@@ -914,8 +1073,12 @@
                     });
             }
 
+            unionPrintBtn.addEventListener('click', generateUnionPDF);
+
+            // ─── PRINT: TRANSACTIONS PDF ──────────────────────────────────────────
+
             function generateTransactionsPDF() {
-                const data = dataStore.transactions;
+                const data = filteredTransactions;
                 if (!data || data.length === 0) {
                     alert('No transaction data to print.');
                     return;
@@ -938,43 +1101,47 @@
                     let rowsHTML = '';
                     pageData.forEach((row, idx) => {
                         const globalIdx = start + idx + 1;
+                        const modeVal = row.mode || '-';
+                        const statusVal = row.status || '-';
                         rowsHTML += `
                             <tr style="border-bottom:1px solid #d1d5db;">
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${globalIdx}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.mode)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.user)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${globalIdx}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(modeVal)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(statusVal)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.source)}</td>
                             </tr>`;
                     });
 
                     const pageBreak = (page < totalPages - 1) ? 'page-break-after: always !important;' : '';
 
                     pagesHTML += `
-                        <div style="padding:40px 45px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
-                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:22px;">
-                                <h1 style="font-size:24px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">USER TRANSACTIONS</h1>
-                                <p style="font-size:14px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
+                        <div style="padding:35px 40px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
+                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:20px;">
+                                <h1 style="font-size:22px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">TRANSACTIONS STATUS</h1>
+                                <p style="font-size:13px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
                             </div>
                             <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
                                 <thead>
                                     <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:8%;">#</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Tx ID</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Mode</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Amount</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:16%;">Date</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Updated</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:12%;">User</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:6%;">#</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:16%;">Tx ID</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Mode</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Status</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Amount</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Date</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Updated</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Source</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${rowsHTML}
                                 </tbody>
                             </table>
-                            <div style="margin-top:25px; border-top:1px solid #000; padding-top:10px; display:flex; justify-content:space-between; font-size:11px; font-weight:bold; color:#475569;">
+                            <div style="margin-top:20px; border-top:1px solid #000; padding-top:8px; display:flex; justify-content:space-between; font-size:10px; font-weight:bold; color:#475569;">
                                 <div>Total: ${total} · Page ${page+1} of ${totalPages}</div>
                                 <div>Nadha · Transactions</div>
                             </div>
@@ -988,7 +1155,7 @@
 
                 const opt = {
                     margin: 0,
-                    filename: `User_Transactions_${dateStr}.pdf`,
+                    filename: `Transactions_Status_${dateStr}.pdf`,
                     image: { type: 'jpeg', quality: 1.0 },
                     html2canvas: { scale: 2.5, logging: false, useCORS: true, scrollX: 0, scrollY: 0 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -1008,7 +1175,6 @@
                     });
             }
 
-            unionPrintBtn.addEventListener('click', generateUnionPDF);
             txPrintBtn.addEventListener('click', generateTransactionsPDF);
 
             // ─── BOOT ──────────────────────────────────────────────────────────────────
