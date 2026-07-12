@@ -653,6 +653,9 @@
                 headings: ['transaction_id', 'title', 'type', 'status', 'bill_url', 'amount', 'date', 'updated_at']
             };
 
+            // NEW: transaction title lookup sheet (gid=1411745735)
+            const TITLE_LOOKUP_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1411745735&single=true&output=csv';
+
             const USER_TRANSACTION_SHEETS = {
                 'Swalih KT': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=644558866&single=true&output=csv',
                 'Fayis': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=2116518035&single=true&output=csv',
@@ -702,6 +705,7 @@
 
             let allTransactions = [];
             let filteredTransactions = [];
+            let titleLookup = {}; // transaction_id -> title
 
             // ─── DOM REFS ────────────────────────────────────────────────────────────
             const tabContents = document.querySelectorAll('.tab-content');
@@ -862,7 +866,7 @@
                     `${data.length} / ${total}`;
             }
 
-            // ─── RENDER: TRANSACTIONS ──────────────────────────────────────────────
+            // ─── RENDER: TRANSACTIONS (with title from lookup) ────────────────────
 
             function renderTransactions(data) {
                 if (!data || data.length === 0) {
@@ -878,11 +882,13 @@
                     const modeVal = row.mode || '';
                     const modeCls = getModeClass(modeVal);
                     const statusHtml = getStatusBadge(row.status);
+                    // lookup title from titleLookup map using transaction_id
+                    const title = titleLookup[row.transaction_id] || row.title || '—';
 
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
-                        <td><strong>${escapeHTML(row.title)}</strong></td>
+                        <td><strong>${escapeHTML(title)}</strong></td>
                         <td><span class="badge-mode ${modeCls}">${escapeHTML(modeVal)}</span></td>
                         <td>${statusHtml}</td>
                         <td>${escapeHTML(row.amount)}</td>
@@ -920,7 +926,6 @@
                     return match;
                 });
 
-                // apply sort
                 if (unionSortKey) {
                     filtered = sortUnionData(filtered, unionSortKey, unionSortAsc);
                 }
@@ -940,8 +945,9 @@
                 let filtered = allTransactions.filter(row => {
                     const rowMode = String(row.mode || '').toLowerCase().trim();
                     const rowStatus = String(row.status || '').toLowerCase().trim();
-                    const rowTitle = String(row.title || '').toLowerCase().trim();
                     const rowSource = String(row.source || '').toLowerCase().trim();
+                    // lookup title for filtering
+                    const rowTitle = (titleLookup[row.transaction_id] || row.title || '').toLowerCase().trim();
                     let match = true;
                     if (modeVal !== 'all' && rowMode !== modeVal) match = false;
                     if (statusVal !== 'all' && rowStatus !== statusVal) match = false;
@@ -957,6 +963,27 @@
             // ─── LOAD DATA ──────────────────────────────────────────────────────────
 
             function loadAllData() {
+                // First load title lookup sheet
+                fetchSheet(TITLE_LOOKUP_URL)
+                    .then(rows => {
+                        const map = {};
+                        rows.forEach(row => {
+                            if (row.transaction_id) {
+                                map[row.transaction_id.trim()] = row.title || '';
+                            }
+                        });
+                        titleLookup = map;
+                        console.log(`Loaded ${Object.keys(titleLookup).length} titles from lookup.`);
+                    })
+                    .catch(err => console.warn('Title lookup load error:', err))
+                    .finally(() => {
+                        // Then load union and transactions regardless
+                        loadUnionAndTransactions();
+                    });
+            }
+
+            function loadUnionAndTransactions() {
+                // 1. Union
                 fetchSheet(UNION_SHEET.url)
                     .then(data => {
                         unionData = data;
@@ -972,6 +999,7 @@
                             `<tr><td colspan="9" class="empty-message">⚠️ Failed to load union sheet.</td></tr>`;
                     });
 
+                // 2. All user transaction sheets
                 const sheetKeys = Object.keys(USER_TRANSACTION_SHEETS);
                 const fetchPromises = sheetKeys.map(source => {
                     const url = USER_TRANSACTION_SHEETS[source];
@@ -1171,7 +1199,7 @@
 
             unionPrintBtn.addEventListener('click', generateUnionPDF);
 
-            // ─── PRINT: TRANSACTIONS PDF (no bill_url) ──────────────────────────
+            // ─── PRINT: TRANSACTIONS PDF (no bill_url, with title) ───────────────
 
             function generateTransactionsPDF() {
                 const data = filteredTransactions;
@@ -1196,11 +1224,12 @@
                     let rowsHTML = '';
                     pageData.forEach((row, idx) => {
                         const globalIdx = start + idx + 1;
+                        const title = titleLookup[row.transaction_id] || row.title || '—';
                         rowsHTML += `
                             <tr style="border-bottom:1px solid #d1d5db;">
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${globalIdx}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
-                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
+                                <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(title)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.mode)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.status)}</td>
                                 <td style="padding:8px 10px; font-size:11.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
@@ -1221,14 +1250,14 @@
                                 <thead>
                                     <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:6%;">#</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:14%;">Tx ID</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Tx ID</th>
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:15%;">Title</th>
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:10%;">Mode</th>
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Status</th>
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:10%;">Amount</th>
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:10%;">Date</th>
                                         <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:12%;">Updated</th>
-                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:11%;">Source</th>
+                                        <th style="padding:8px 10px; text-align:left; font-weight:bold; font-size:11px; color:#000; width:13%;">Source</th>
                                     </tr>
                                 </thead>
                                 <tbody>${rowsHTML}</tbody>
