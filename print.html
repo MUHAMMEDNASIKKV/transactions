@@ -151,7 +151,7 @@
             color: #0b2b4a;
         }
 
-        /* ── Filter Panel (transactions only) ────────────────────── */
+        /* ── Filter Panel ─────────────────────────────────────────── */
         .filter-panel {
             display: flex;
             align-items: center;
@@ -291,28 +291,6 @@
             display: inline-block;
         }
 
-        .badge-status {
-            padding: 0.2rem 0.7rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: capitalize;
-            display: inline-block;
-        }
-
-        .badge-status.pending {
-            background: #fef9c3;
-            color: #854d0e;
-        }
-        .badge-status.completed {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .badge-status.cancelled {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
         .badge-mode {
             padding: 0.2rem 0.7rem;
             border-radius: 20px;
@@ -413,7 +391,7 @@
         <div class="app-header">
             <div>
                 <h1>Nadha · Admin</h1>
-                <span class="sub">Sheet dashboard &amp; transaction print</span>
+                <span class="sub">Union &amp; Transactions</span>
             </div>
             <div style="font-size:0.85rem; color:#64748b;">
                 <span id="currentDate"></span>
@@ -422,109 +400,43 @@
 
         <!-- ─── NAVBAR ──────────────────────────────────────────── -->
         <div class="nav-tabs" id="navTabs">
-            <button class="nav-tab active" data-tab="tab-credentials">👤 Credentials</button>
-            <button class="nav-tab" data-tab="tab-registration">📋 Registration</button>
-            <button class="nav-tab" data-tab="tab-transaction-master">💳 Transaction Master</button>
-            <button class="nav-tab" data-tab="tab-union">🏛️ Union</button>
+            <button class="nav-tab active" data-tab="tab-union">🏛️ Union</button>
             <button class="nav-tab" data-tab="tab-transactions">📊 Transactions</button>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 1 — user_credentials                                     -->
+        <!-- TAB 1 — union (filter by type)                           -->
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <div class="tab-content active" id="tab-credentials">
+        <div class="tab-content active" id="tab-union">
             <div class="info-banner">
-                <span>🔐</span> <strong>User Credentials</strong> — username, password, full_name, role
+                <span>🏛️</span> <strong>Union</strong> — transaction_id, title, type, bill_url, amount, date, updated_at
+                &nbsp;·&nbsp; filter by <strong>type</strong>
             </div>
-            <div class="stats-row">
-                <span class="stat-item">Total: <strong id="credCount">0</strong></span>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Username</th>
-                            <th>Password</th>
-                            <th>Full Name</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody id="credBody">
-                        <tr><td colspan="5" class="empty-message">Loading credentials…</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 2 — registration                                       -->
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <div class="tab-content" id="tab-registration">
-            <div class="info-banner">
-                <span>📋</span> <strong>Registration</strong> — full_name, phone, gmail, registration_date
+            <!-- Filter Panel for Union -->
+            <div class="filter-panel" id="unionFilterPanel">
+                <div class="filter-group">
+                    <label>📌 Type</label>
+                    <select class="filter-select" id="unionTypeFilter">
+                        <option value="all">All</option>
+                        <option value="hard">Hard</option>
+                        <option value="soft">Soft</option>
+                        <option value="to get">To Get</option>
+                        <option value="to give">To Give</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="gap:0.5rem;">
+                    <button class="filter-btn" id="unionApplyFilterBtn">Apply</button>
+                    <button class="reset-btn" id="unionResetFilterBtn">Reset</button>
+                    <span class="count-badge" id="unionCountBadge">All</span>
+                </div>
             </div>
-            <div class="stats-row">
-                <span class="stat-item">Total: <strong id="regCount">0</strong></span>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Full Name</th>
-                            <th>Phone</th>
-                            <th>Gmail</th>
-                            <th>Registration Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="regBody">
-                        <tr><td colspan="5" class="empty-message">Loading registration…</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 3 — transaction_master                                 -->
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <div class="tab-content" id="tab-transaction-master">
-            <div class="info-banner">
-                <span>💳</span> <strong>Transaction Master</strong> — transaction_id, title, mode, amount, bill_url, date
-            </div>
             <div class="stats-row">
-                <span class="stat-item">Total: <strong id="tmCount">0</strong></span>
+                <span class="stat-item">Total: <strong id="unionTotalCount">0</strong></span>
+                <span class="stat-item" style="background:#e6f0fa;">Filtered: <strong id="unionFilteredCount">0</strong></span>
             </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Transaction ID</th>
-                            <th>Title</th>
-                            <th>Mode</th>
-                            <th>Amount</th>
-                            <th>Bill URL</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tmBody">
-                        <tr><td colspan="7" class="empty-message">Loading transaction master…</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 4 — union                                             -->
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <div class="tab-content" id="tab-union">
-            <div class="info-banner">
-                <span>🏛️</span> <strong>Union</strong> — transaction_id, title, type, bill_url, status, amount, date, updated_at
-            </div>
-            <div class="stats-row">
-                <span class="stat-item">Total: <strong id="unionCount">0</strong></span>
-            </div>
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -534,57 +446,35 @@
                             <th>Title</th>
                             <th>Type</th>
                             <th>Bill URL</th>
-                            <th>Status</th>
                             <th>Amount</th>
                             <th>Date</th>
                             <th>Updated At</th>
                         </tr>
                     </thead>
                     <tbody id="unionBody">
-                        <tr><td colspan="9" class="empty-message">Loading union…</td></tr>
+                        <tr><td colspan="8" class="empty-message">Loading union…</td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Print button for union -->
+            <div class="print-section">
+                <button class="print-btn" id="unionPrintBtn">
+                    <span>📄</span> Download Union PDF
+                </button>
             </div>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAB 5 — transactions (16552 + nasik combined)             -->
+        <!-- TAB 2 — transactions (all user sheets)                   -->
         <!-- ═══════════════════════════════════════════════════════════ -->
         <div class="tab-content" id="tab-transactions">
             <div class="info-banner">
-                <span>📊</span> <strong>Transactions</strong> — combined from 16552_transactions &amp; nasik_transactions
-                &nbsp;·&nbsp; filter by <strong>mode</strong> and <strong>status</strong>
-            </div>
-
-            <!-- Filter Panel -->
-            <div class="filter-panel" id="txFilterPanel">
-                <div class="filter-group">
-                    <label>📌 Mode</label>
-                    <select class="filter-select" id="txModeFilter">
-                        <option value="all">All</option>
-                        <option value="to get">To Get</option>
-                        <option value="to give">To Give</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>📌 Status</label>
-                    <select class="filter-select" id="txStatusFilter">
-                        <option value="all">All</option>
-                        <option value="pending">Pending</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div class="filter-group" style="gap:0.5rem;">
-                    <button class="filter-btn" id="txApplyFilterBtn">Apply</button>
-                    <button class="reset-btn" id="txResetFilterBtn">Reset</button>
-                    <span class="count-badge" id="txCountBadge">All</span>
-                </div>
+                <span>📊</span> <strong>User Transactions</strong> — combined from all user transaction sheets
             </div>
 
             <div class="stats-row">
                 <span class="stat-item">Total: <strong id="txTotalCount">0</strong></span>
-                <span class="stat-item" style="background:#e6f0fa;">Filtered: <strong id="txFilteredCount">0</strong></span>
             </div>
 
             <div class="table-responsive">
@@ -594,15 +484,14 @@
                             <th>#</th>
                             <th>Transaction ID</th>
                             <th>Mode</th>
-                            <th>Status</th>
                             <th>Amount</th>
                             <th>Date</th>
                             <th>Updated At</th>
-                            <th>Source</th>
+                            <th>User</th>
                         </tr>
                     </thead>
                     <tbody id="txBody">
-                        <tr><td colspan="8" class="empty-message">Loading transactions…</td></tr>
+                        <tr><td colspan="7" class="empty-message">Loading transactions…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -627,72 +516,77 @@
 
             // ─── CONFIG ──────────────────────────────────────────────────────────────
             const SHEETS = {
-                credentials: {
-                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=0&single=true&output=csv',
-                    headings: ['username', 'password', 'full_name', 'role']
-                },
-                registration: {
-                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1165587820&single=true&output=csv',
-                    headings: ['full_name', 'phone', 'gmail', 'registration_date']
-                },
-                transaction_master: {
-                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1411745735&single=true&output=csv',
-                    headings: ['transaction_id', 'title', 'mode', 'amount', 'bill_url', 'date']
-                },
                 union: {
                     url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=992781757&single=true&output=csv',
-                    headings: ['transaction_id', 'title', 'type', 'bill_url', 'status', 'amount', 'date', 'updated_at']
+                    headings: ['transaction_id', 'title', 'type', 'bill_url', 'amount', 'date', 'updated_at']
                 },
-                tx16552: {
-                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=677538142&single=true&output=csv',
-                    headings: ['transaction_id', 'mode', 'status', 'amount', 'date', 'updated_at'],
-                    source: '16552'
-                },
-                txNasik: {
-                    url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=456120809&single=true&output=csv',
-                    headings: ['transaction_id', 'mode', 'status', 'amount', 'date', 'updated_at'],
-                    source: 'Nasik'
-                }
+                // user transaction sheets
+                userSheets: [
+                    { name: 'Swalih KT', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=644558866&single=true&output=csv' },
+                    { name: 'Fayis', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=2116518035&single=true&output=csv' },
+                    { name: 'Sinan EK', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1042137901&single=true&output=csv' },
+                    { name: 'Bishr', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1376408358&single=true&output=csv' },
+                    { name: 'Basith C', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1487251346&single=true&output=csv' },
+                    { name: 'Arshad U', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1122744580&single=true&output=csv' },
+                    { name: 'Arshad CK', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=350578566&single=true&output=csv' },
+                    { name: 'Anshif M', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=341305796&single=true&output=csv' },
+                    { name: 'Anshif K', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=710267574&single=true&output=csv' },
+                    { name: 'Anas', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1250373344&single=true&output=csv' },
+                    { name: 'Althaf', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1855200102&single=true&output=csv' },
+                    { name: 'Afeef', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=863807353&single=true&output=csv' },
+                    { name: 'Aboobacker', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1694310975&single=true&output=csv' },
+                    { name: 'Saeed', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=110241602&single=true&output=csv' },
+                    { name: 'Naeem AP', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1066525434&single=true&output=csv' },
+                    { name: 'Akhnas', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1942688598&single=true&output=csv' },
+                    { name: 'Shamil', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=6645382&single=true&output=csv' },
+                    { name: 'Shaheem', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=48351995&single=true&output=csv' },
+                    { name: 'Sha Safar', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=160780710&single=true&output=csv' },
+                    { name: 'Sabith', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1568534210&single=true&output=csv' },
+                    { name: 'Rizil', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=429244218&single=true&output=csv' },
+                    { name: 'Rashid', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=791931666&single=true&output=csv' },
+                    { name: 'Nafi', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=722598451&single=true&output=csv' },
+                    { name: 'Naeem M', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=531698611&single=true&output=csv' },
+                    { name: 'Thufail', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1235206893&single=true&output=csv' },
+                    { name: 'Thanveer', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=74793820&single=true&output=csv' },
+                    { name: 'Swalih M', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1028776902&single=true&output=csv' },
+                    { name: 'Swalih K', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=691156219&single=true&output=csv' },
+                    { name: 'Musharraf', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=15352283&single=true&output=csv' },
+                    { name: 'Murshid', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=81901715&single=true&output=csv' },
+                    { name: 'Muqthar', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1320084366&single=true&output=csv' },
+                    { name: 'Yoonus', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=394165321&single=true&output=csv' },
+                    { name: 'Midlaj', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1149357257&single=true&output=csv' },
+                    { name: 'Jazal', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=869948528&single=true&output=csv' },
+                    { name: 'Hisham', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1463142939&single=true&output=csv' },
+                    { name: 'Habeeb', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=891306587&single=true&output=csv' },
+                    { name: 'Galib', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=933706377&single=true&output=csv' },
+                    { name: 'muhsin', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTq1rqjiEtufgddsU2Wq6UNoX7Nfm6RosBl91wzy4gdoAQ9HpjPF7zr7Ld92OJyHMKk3F1vQnPqP3m1/pub?gid=1973975096&single=true&output=csv' }
+                ]
             };
 
             // ─── STATE ──────────────────────────────────────────────────────────────
-            // Store raw data per sheet
             const dataStore = {
-                credentials: [],
-                registration: [],
-                transaction_master: [],
                 union: [],
-                transactions: [] // combined from 16552 + nasik
+                transactions: [] // combined from user sheets
             };
 
-            // Filtered transactions (for display)
-            let filteredTransactions = [];
+            let filteredUnion = [];
 
             // ─── DOM REFS ────────────────────────────────────────────────────────────
             const tabContents = document.querySelectorAll('.tab-content');
             const navTabs = document.querySelectorAll('.nav-tab');
 
-            // Table bodies
-            const credBody = document.getElementById('credBody');
-            const regBody = document.getElementById('regBody');
-            const tmBody = document.getElementById('tmBody');
             const unionBody = document.getElementById('unionBody');
             const txBody = document.getElementById('txBody');
 
-            // Count spans
-            const credCount = document.getElementById('credCount');
-            const regCount = document.getElementById('regCount');
-            const tmCount = document.getElementById('tmCount');
-            const unionCount = document.getElementById('unionCount');
+            const unionTotalCount = document.getElementById('unionTotalCount');
+            const unionFilteredCount = document.getElementById('unionFilteredCount');
+            const unionCountBadge = document.getElementById('unionCountBadge');
             const txTotalCount = document.getElementById('txTotalCount');
-            const txFilteredCount = document.getElementById('txFilteredCount');
-            const txCountBadge = document.getElementById('txCountBadge');
 
-            // Transaction filters
-            const txModeFilter = document.getElementById('txModeFilter');
-            const txStatusFilter = document.getElementById('txStatusFilter');
-            const txApplyFilterBtn = document.getElementById('txApplyFilterBtn');
-            const txResetFilterBtn = document.getElementById('txResetFilterBtn');
+            const unionTypeFilter = document.getElementById('unionTypeFilter');
+            const unionApplyFilterBtn = document.getElementById('unionApplyFilterBtn');
+            const unionResetFilterBtn = document.getElementById('unionResetFilterBtn');
+            const unionPrintBtn = document.getElementById('unionPrintBtn');
             const txPrintBtn = document.getElementById('txPrintBtn');
 
             const currentDateEl = document.getElementById('currentDate');
@@ -738,10 +632,8 @@
                 return rows;
             }
 
-            function fetchSheet(key) {
-                const config = SHEETS[key];
-                if (!config) return Promise.reject('Unknown sheet');
-                return fetch(config.url)
+            function fetchSheet(url) {
+                return fetch(url)
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.text();
@@ -751,200 +643,121 @@
 
             // ─── RENDER FUNCTIONS ────────────────────────────────────────────────────
 
-            function renderCredentials(data) {
-                if (!data || data.length === 0) {
-                    credBody.innerHTML = `<tr><td colspan="5" class="empty-message">No credentials found.</td></tr>`;
-                    credCount.textContent = '0';
-                    return;
-                }
-                let html = '';
-                data.forEach((row, i) => {
-                    html += `<tr>
-                        <td>${i + 1}</td>
-                        <td>${escapeHTML(row.username)}</td>
-                        <td>${escapeHTML(row.password)}</td>
-                        <td><strong>${escapeHTML(row.full_name)}</strong></td>
-                        <td><span class="badge-dept">${escapeHTML(row.role)}</span></td>
-                    </tr>`;
-                });
-                credBody.innerHTML = html;
-                credCount.textContent = data.length;
-            }
-
-            function renderRegistration(data) {
-                if (!data || data.length === 0) {
-                    regBody.innerHTML = `<tr><td colspan="5" class="empty-message">No registrations found.</td></tr>`;
-                    regCount.textContent = '0';
-                    return;
-                }
-                let html = '';
-                data.forEach((row, i) => {
-                    html += `<tr>
-                        <td>${i + 1}</td>
-                        <td><strong>${escapeHTML(row.full_name)}</strong></td>
-                        <td>${escapeHTML(row.phone)}</td>
-                        <td>${escapeHTML(row.gmail)}</td>
-                        <td>${escapeHTML(row.registration_date)}</td>
-                    </tr>`;
-                });
-                regBody.innerHTML = html;
-                regCount.textContent = data.length;
-            }
-
-            function renderTransactionMaster(data) {
-                if (!data || data.length === 0) {
-                    tmBody.innerHTML = `<tr><td colspan="7" class="empty-message">No transaction master records.</td></tr>`;
-                    tmCount.textContent = '0';
-                    return;
-                }
-                let html = '';
-                data.forEach((row, i) => {
-                    html += `<tr>
-                        <td>${i + 1}</td>
-                        <td><code>${escapeHTML(row.transaction_id)}</code></td>
-                        <td><strong>${escapeHTML(row.title)}</strong></td>
-                        <td><span class="badge-mode">${escapeHTML(row.mode)}</span></td>
-                        <td>${escapeHTML(row.amount)}</td>
-                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(row.bill_url)}</td>
-                        <td>${escapeHTML(row.date)}</td>
-                    </tr>`;
-                });
-                tmBody.innerHTML = html;
-                tmCount.textContent = data.length;
-            }
-
             function renderUnion(data) {
                 if (!data || data.length === 0) {
-                    unionBody.innerHTML = `<tr><td colspan="9" class="empty-message">No union records found.</td></tr>`;
-                    unionCount.textContent = '0';
+                    unionBody.innerHTML = `<tr><td colspan="8" class="empty-message">No union records found.</td></tr>`;
+                    unionTotalCount.textContent = '0';
+                    unionFilteredCount.textContent = '0';
+                    unionCountBadge.textContent = '0';
                     return;
                 }
                 let html = '';
                 data.forEach((row, i) => {
-                    const status = String(row.status || '').toLowerCase();
-                    let statusClass = 'badge-status';
-                    if (status === 'pending') statusClass += ' pending';
-                    else if (status === 'completed') statusClass += ' completed';
-                    else if (status === 'cancelled') statusClass += ' cancelled';
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
                         <td><strong>${escapeHTML(row.title)}</strong></td>
-                        <td>${escapeHTML(row.type)}</td>
-                        <td style="max-width:100px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(row.bill_url)}</td>
-                        <td><span class="${statusClass}">${escapeHTML(row.status)}</span></td>
+                        <td><span class="badge-mode">${escapeHTML(row.type)}</span></td>
+                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(row.bill_url)}</td>
                         <td>${escapeHTML(row.amount)}</td>
                         <td>${escapeHTML(row.date)}</td>
                         <td>${escapeHTML(row.updated_at)}</td>
                     </tr>`;
                 });
                 unionBody.innerHTML = html;
-                unionCount.textContent = data.length;
+                unionTotalCount.textContent = dataStore.union.length;
+                unionFilteredCount.textContent = data.length;
+                unionCountBadge.textContent = data.length === dataStore.union.length ?
+                    `All ${data.length}` :
+                    `${data.length} / ${dataStore.union.length}`;
             }
 
             function renderTransactions(data) {
                 if (!data || data.length === 0) {
-                    txBody.innerHTML = `<tr><td colspan="8" class="empty-message">No transactions found.</td></tr>`;
+                    txBody.innerHTML = `<tr><td colspan="7" class="empty-message">No transactions found.</td></tr>`;
                     txTotalCount.textContent = '0';
-                    txFilteredCount.textContent = '0';
-                    txCountBadge.textContent = '0';
                     return;
                 }
                 let html = '';
                 data.forEach((row, i) => {
-                    const status = String(row.status || '').toLowerCase();
-                    let statusClass = 'badge-status';
-                    if (status === 'pending') statusClass += ' pending';
-                    else if (status === 'completed') statusClass += ' completed';
-                    else if (status === 'cancelled') statusClass += ' cancelled';
-                    const mode = String(row.mode || '').toLowerCase();
                     html += `<tr>
                         <td>${i + 1}</td>
                         <td><code>${escapeHTML(row.transaction_id)}</code></td>
                         <td><span class="badge-mode">${escapeHTML(row.mode)}</span></td>
-                        <td><span class="${statusClass}">${escapeHTML(row.status)}</span></td>
                         <td>${escapeHTML(row.amount)}</td>
                         <td>${escapeHTML(row.date)}</td>
                         <td>${escapeHTML(row.updated_at)}</td>
-                        <td><span class="badge-dept">${escapeHTML(row.source)}</span></td>
+                        <td><span class="badge-dept">${escapeHTML(row.user)}</span></td>
                     </tr>`;
                 });
                 txBody.innerHTML = html;
-                txTotalCount.textContent = dataStore.transactions.length;
-                txFilteredCount.textContent = data.length;
-                txCountBadge.textContent = data.length === dataStore.transactions.length ?
-                    `All ${data.length}` :
-                    `${data.length} / ${dataStore.transactions.length}`;
+                txTotalCount.textContent = data.length;
             }
 
-            // ─── TRANSACTION FILTER LOGIC ───────────────────────────────────────────
+            // ─── FILTER LOGIC ────────────────────────────────────────────────────────
 
-            function applyTransactionFilters() {
-                const modeVal = txModeFilter.value.toLowerCase();
-                const statusVal = txStatusFilter.value.toLowerCase();
-                const all = dataStore.transactions;
+            function applyUnionFilters() {
+                const typeVal = unionTypeFilter.value.toLowerCase();
+                const all = dataStore.union;
 
                 let filtered = all.filter(row => {
-                    const rowMode = String(row.mode || '').toLowerCase();
-                    const rowStatus = String(row.status || '').toLowerCase();
-                    let match = true;
-                    if (modeVal !== 'all' && rowMode !== modeVal) match = false;
-                    if (statusVal !== 'all' && rowStatus !== statusVal) match = false;
-                    return match;
+                    const rowType = String(row.type || '').toLowerCase();
+                    if (typeVal !== 'all' && rowType !== typeVal) return false;
+                    return true;
                 });
 
-                filteredTransactions = filtered;
-                renderTransactions(filtered);
+                filteredUnion = filtered;
+                renderUnion(filtered);
             }
 
-            // ─── LOAD ALL SHEETS ─────────────────────────────────────────────────────
+            // ─── LOAD ALL DATA ─────────────────────────────────────────────────────
 
-            function loadAllSheets() {
-                const promises = [
-                    fetchSheet('credentials').then(d => { dataStore.credentials = d;
-                        renderCredentials(d); }),
-                    fetchSheet('registration').then(d => { dataStore.registration = d;
-                        renderRegistration(d); }),
-                    fetchSheet('transaction_master').then(d => { dataStore.transaction_master = d;
-                        renderTransactionMaster(d); }),
-                    fetchSheet('union').then(d => { dataStore.union = d;
-                        renderUnion(d); }),
-                    fetchSheet('tx16552').then(d => {
-                        d.forEach(r => r.source = '16552');
-                        return d;
-                    }),
-                    fetchSheet('txNasik').then(d => {
-                        d.forEach(r => r.source = 'Nasik');
-                        return d;
+            function loadAllData() {
+                // load union
+                fetchSheet(SHEETS.union.url)
+                    .then(data => {
+                        dataStore.union = data;
+                        filteredUnion = [...data];
+                        renderUnion(data);
                     })
-                ];
+                    .catch(err => {
+                        console.error('Union load error:', err);
+                        unionBody.innerHTML =
+                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load union data.</td></tr>`;
+                    });
 
-                Promise.all(promises)
+                // load all user transaction sheets
+                const userPromises = SHEETS.userSheets.map(sheet =>
+                    fetchSheet(sheet.url)
+                    .then(data => {
+                        data.forEach(row => row.user = sheet.name);
+                        return data;
+                    })
+                    .catch(err => {
+                        console.error(`Error loading ${sheet.name}:`, err);
+                        return [];
+                    })
+                );
+
+                Promise.all(userPromises)
                     .then(results => {
-                        // combine transactions
-                        const tx16552 = results[4] || [];
-                        const txNasik = results[5] || [];
-                        const combined = [...tx16552, ...txNasik];
+                        const combined = results.flat();
                         dataStore.transactions = combined;
-                        filteredTransactions = [...combined];
                         renderTransactions(combined);
                     })
                     .catch(err => {
-                        console.error('Load error:', err);
-                        // show error in transaction table
+                        console.error('Transactions load error:', err);
                         txBody.innerHTML =
-                            `<tr><td colspan="8" class="empty-message">⚠️ Failed to load transaction sheets.</td></tr>`;
+                            `<tr><td colspan="7" class="empty-message">⚠️ Failed to load transactions.</td></tr>`;
                     });
             }
 
             // ─── NAVIGATION ──────────────────────────────────────────────────────────
 
             function switchTab(tabId) {
-                // update nav buttons
                 navTabs.forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.tab === tabId);
                 });
-                // update content
                 tabContents.forEach(el => {
                     el.classList.toggle('active', el.id === tabId);
                 });
@@ -966,19 +779,115 @@
                 currentDateEl.textContent = `${d}-${m}-${y}`;
             }
 
-            // ─── TRANSACTION FILTER EVENTS ─────────────────────────────────────────
+            // ─── FILTER EVENTS ─────────────────────────────────────────────────────
 
-            txApplyFilterBtn.addEventListener('click', applyTransactionFilters);
-            txResetFilterBtn.addEventListener('click', function() {
-                txModeFilter.value = 'all';
-                txStatusFilter.value = 'all';
-                applyTransactionFilters();
+            unionApplyFilterBtn.addEventListener('click', applyUnionFilters);
+            unionResetFilterBtn.addEventListener('click', function() {
+                unionTypeFilter.value = 'all';
+                applyUnionFilters();
             });
+            unionTypeFilter.addEventListener('change', applyUnionFilters);
 
-            // ─── PRINT PDF (Transactions) ──────────────────────────────────────────
+            // ─── PRINT PDF ──────────────────────────────────────────────────────────
+
+            function generateUnionPDF() {
+                const data = filteredUnion;
+                if (!data || data.length === 0) {
+                    alert('No union data to print.');
+                    return;
+                }
+
+                const today = new Date();
+                const dateStr =
+                    `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
+
+                const PER_PAGE = 25;
+                const total = data.length;
+                const totalPages = Math.ceil(total / PER_PAGE);
+
+                let pagesHTML = '';
+                for (let page = 0; page < totalPages; page++) {
+                    const start = page * PER_PAGE;
+                    const end = Math.min(start + PER_PAGE, total);
+                    const pageData = data.slice(start, end);
+
+                    let rowsHTML = '';
+                    pageData.forEach((row, idx) => {
+                        const globalIdx = start + idx + 1;
+                        rowsHTML += `
+                            <tr style="border-bottom:1px solid #d1d5db;">
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${globalIdx}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.title)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.type)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.bill_url)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
+                            </tr>`;
+                    });
+
+                    const pageBreak = (page < totalPages - 1) ? 'page-break-after: always !important;' : '';
+
+                    pagesHTML += `
+                        <div style="padding:40px 45px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
+                            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:22px;">
+                                <h1 style="font-size:24px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">UNION STATUS</h1>
+                                <p style="font-size:14px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
+                                <thead>
+                                    <tr style="background-color:#FAF6EE !important; border-bottom:2px solid #000;">
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:6%;">#</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Tx ID</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Title</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:12%;">Type</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Bill URL</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:12%;">Amount</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:10%;">Date</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:10%;">Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHTML}
+                                </tbody>
+                            </table>
+                            <div style="margin-top:25px; border-top:1px solid #000; padding-top:10px; display:flex; justify-content:space-between; font-size:11px; font-weight:bold; color:#475569;">
+                                <div>Total: ${total} · Page ${page+1} of ${totalPages}</div>
+                                <div>Nadha · Union</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const zone = document.getElementById('pdf-render-zone');
+                zone.innerHTML = pagesHTML;
+                document.body.classList.add('printing-mode');
+
+                const opt = {
+                    margin: 0,
+                    filename: `Union_Status_${dateStr}.pdf`,
+                    image: { type: 'jpeg', quality: 1.0 },
+                    html2canvas: { scale: 2.5, logging: false, useCORS: true, scrollX: 0, scrollY: 0 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                };
+
+                html2pdf().set(opt).from(zone).save()
+                    .then(() => {
+                        document.body.classList.remove('printing-mode');
+                        zone.innerHTML = '';
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        document.body.classList.remove('printing-mode');
+                        zone.innerHTML = '';
+                        alert('PDF generation failed.');
+                    });
+            }
 
             function generateTransactionsPDF() {
-                const data = filteredTransactions;
+                const data = dataStore.transactions;
                 if (!data || data.length === 0) {
                     alert('No transaction data to print.');
                     return;
@@ -1001,19 +910,15 @@
                     let rowsHTML = '';
                     pageData.forEach((row, idx) => {
                         const globalIdx = start + idx + 1;
-                        const status = String(row.status || '').toLowerCase();
-                        const statusDisplay = row.status || '-';
-                        const modeDisplay = row.mode || '-';
                         rowsHTML += `
                             <tr style="border-bottom:1px solid #d1d5db;">
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${globalIdx}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.transaction_id)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(modeDisplay)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(statusDisplay)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.mode)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.amount)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.date)}</td>
                                 <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.updated_at)}</td>
-                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.source)}</td>
+                                <td style="padding:10px 10px; font-size:12.5px; text-align:left; color:#000;">${escapeHTML(row.user)}</td>
                             </tr>`;
                     });
 
@@ -1022,7 +927,7 @@
                     pagesHTML += `
                         <div style="padding:40px 45px; width:210mm; background:#ffffff; color:#000000; font-family:Arial,sans-serif; box-sizing:border-box; ${pageBreak}">
                             <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:22px;">
-                                <h1 style="font-size:24px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">TRANSACTIONS STATUS</h1>
+                                <h1 style="font-size:24px; font-weight:bold; margin:0; letter-spacing:2px; color:#000;">USER TRANSACTIONS</h1>
                                 <p style="font-size:14px; margin:6px 0 0; font-weight:bold; color:#000;">${dateStr}</p>
                             </div>
                             <table style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1;">
@@ -1031,11 +936,10 @@
                                         <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:8%;">#</th>
                                         <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Tx ID</th>
                                         <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Mode</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:16%;">Status</th>
                                         <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Amount</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:14%;">Date</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:16%;">Updated</th>
-                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:10%;">Source</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:16%;">Date</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:18%;">Updated</th>
+                                        <th style="padding:10px 10px; text-align:left; font-weight:bold; font-size:12px; color:#000; width:12%;">User</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1056,7 +960,7 @@
 
                 const opt = {
                     margin: 0,
-                    filename: `Transactions_Status_${dateStr}.pdf`,
+                    filename: `User_Transactions_${dateStr}.pdf`,
                     image: { type: 'jpeg', quality: 1.0 },
                     html2canvas: { scale: 2.5, logging: false, useCORS: true, scrollX: 0, scrollY: 0 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -1076,20 +980,13 @@
                     });
             }
 
+            unionPrintBtn.addEventListener('click', generateUnionPDF);
             txPrintBtn.addEventListener('click', generateTransactionsPDF);
 
             // ─── BOOT ──────────────────────────────────────────────────────────────────
 
             setCurrentDate();
-            loadAllSheets();
-
-            // re-apply transaction filter whenever filters change (via button)
-            // also on load we already rendered all
-
-            // small extra: if user presses Enter in filter selects, apply
-            [txModeFilter, txStatusFilter].forEach(el => {
-                el.addEventListener('change', applyTransactionFilters);
-            });
+            loadAllData();
 
         })();
     </script>
