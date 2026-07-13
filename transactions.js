@@ -968,12 +968,6 @@ async function loadUnionData() {
     await loadUnionSummary();
 }
 
-/**
- * Determines if a union transaction should be included in summary calculations
- * Based on the new rules:
- * - For 'to get' and 'to give': include only if status is 'pending'
- * - For 'hard' and 'soft': include only if status is 'completed'
- */
 function shouldIncludeInSummary(transaction) {
     const type = transaction.type || '';
     const status = transaction.status || 'pending';
@@ -1014,26 +1008,45 @@ async function loadUnionSummary() {
         let toGetTotal = 0;
         let toGiveTotal = 0;
 
+        // First pass: calculate hard and soft totals from completed transactions
         transactions.forEach(t => {
             const amount = parseFloat(t.amount) || 0;
             const type = t.type || '';
             const status = t.status || '';
             
-            // Only include in summary if the transaction meets the criteria
             if (type === 'hard' && status === 'completed') {
                 hardTotal += amount;
             } else if (type === 'soft' && status === 'completed') {
                 softTotal += amount;
-            } else if (type === 'to get' && status === 'pending') {
-                toGetTotal += amount;
-            } else if (type === 'to give' && status === 'pending') {
-                toGiveTotal += amount;
             }
         });
 
-        // Balance is hard + soft (only completed ones)
+        // Second pass: calculate to get and to give from pending transactions
+        // AND apply the logic: when 'to get' is completed, add to soft
+        // when 'to give' is completed, subtract from soft
+        transactions.forEach(t => {
+            const amount = parseFloat(t.amount) || 0;
+            const type = t.type || '';
+            const status = t.status || '';
+            
+            if (type === 'to get') {
+                if (status === 'pending') {
+                    toGetTotal += amount;
+                } else if (status === 'completed') {
+                    // When 'to get' is completed, add to soft
+                    softTotal += amount;
+                }
+            } else if (type === 'to give') {
+                if (status === 'pending') {
+                    toGiveTotal += amount;
+                } else if (status === 'completed') {
+                    // When 'to give' is completed, subtract from soft
+                    softTotal -= amount;
+                }
+            }
+        });
+
         const balance = hardTotal + softTotal;
-        // Difference is toGet - toGive (only pending ones)
         const difference = toGetTotal - toGiveTotal;
 
         container.innerHTML = `
@@ -1126,12 +1139,6 @@ async function loadUnionTransactions() {
                 `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
                 '<span class="text-gray-400 text-sm">No bill uploaded</span>';
 
-            // Determine if this transaction is included in summary
-            const isIncluded = shouldIncludeInSummary(transaction);
-            const includedBadge = isIncluded ? 
-                '<span class="text-xs text-green-600 font-medium ml-2">(In Summary)</span>' : 
-                '<span class="text-xs text-gray-400 font-medium ml-2">(Not in Summary)</span>';
-
             return `
                 <div class="transaction-card">
                     <div class="transaction-header" onclick="toggleUnionDetails('${transaction.transaction_id || transaction.id}')">
@@ -1161,7 +1168,7 @@ async function loadUnionTransactions() {
                                 </div>
                                 <div>
                                     <div class="detail-label">Type</div>
-                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span> ${includedBadge}</div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span></div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Amount</div>
@@ -1665,7 +1672,6 @@ async function openUnionModal() {
     form.reset();
     document.getElementById('unionError').classList.add('hidden');
     document.getElementById('unionSuccess').classList.add('hidden');
-    delete form.dataset.editId;
 
     const nextId = await getNextUnionId();
     document.getElementById('unionTransactionId').value = nextId;
@@ -1674,17 +1680,11 @@ async function openUnionModal() {
     const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
     document.getElementById('unionDate').value = localDateTime.toISOString().slice(0, 16);
 
-    // Reset submit button text
-    const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Transaction';
-
     modal.classList.remove('hidden');
 }
 
 function closeUnionModal() {
     document.getElementById('unionModal').classList.add('hidden');
-    const form = document.getElementById('unionForm');
-    delete form.dataset.editId;
 }
 
 async function getNextUnionId() {
@@ -1759,7 +1759,7 @@ async function submitUnionTransaction(event) {
 
         let result;
         if (editId) {
-            // Update existing transaction - preserve existing bill if no new one uploaded
+            // Update existing transaction
             const existing = await api.getSheet('union');
             const transaction = existing.find(t => (t.transaction_id || t.id) === editId);
             if (transaction && transaction.bill_url && !billUrl) {
