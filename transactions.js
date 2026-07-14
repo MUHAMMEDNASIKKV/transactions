@@ -22,6 +22,7 @@ class GoogleSheetsAPI {
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
+        this.pendingRequests = new Map();
     }
 
     initLocalCache() {
@@ -60,30 +61,41 @@ class GoogleSheetsAPI {
             }
         }
 
-        try {
-            const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${now}`;
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const data = await response.json();
-
-            const cacheData = { data, timestamp: now };
-            if (useCache) {
-                this.cache.set(cacheKey, cacheData);
-                this.localCache[cacheKey] = cacheData;
-                this.saveLocalCache();
-            }
-
-            return data;
-        } catch (error) {
-            console.error(`Error fetching ${sheetName}:`, error);
-            return { error: error.message };
+        // Prevent duplicate requests
+        if (this.pendingRequests.has(cacheKey)) {
+            return this.pendingRequests.get(cacheKey);
         }
+
+        const promise = (async () => {
+            try {
+                const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${now}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+
+                const cacheData = { data, timestamp: now };
+                if (useCache) {
+                    this.cache.set(cacheKey, cacheData);
+                    this.localCache[cacheKey] = cacheData;
+                    this.saveLocalCache();
+                }
+
+                return data;
+            } catch (error) {
+                console.error(`Error fetching ${sheetName}:`, error);
+                return { error: error.message };
+            } finally {
+                this.pendingRequests.delete(cacheKey);
+            }
+        })();
+
+        this.pendingRequests.set(cacheKey, promise);
+        return promise;
     }
 
     async getBatchSheets(sheetNames) {
@@ -100,6 +112,7 @@ class GoogleSheetsAPI {
         this.cache.clear();
         this.localCache = {};
         localStorage.removeItem('transaction_cache');
+        this.pendingRequests.clear();
     }
 
     async addRow(sheetName, row) {
@@ -270,17 +283,29 @@ class GoogleSheetsAPI {
                 }
             }
 
-            const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (this.pendingRequests.has(cacheKey)) {
+                return this.pendingRequests.get(cacheKey);
+            }
 
-            const data = await response.json();
-            
-            const cacheData = { data, timestamp: Date.now() };
-            this.cache.set(cacheKey, cacheData);
-            this.localCache[cacheKey] = cacheData;
-            this.saveLocalCache();
+            const promise = (async () => {
+                const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            return data;
+                const data = await response.json();
+                
+                const cacheData = { data, timestamp: Date.now() };
+                this.cache.set(cacheKey, cacheData);
+                this.localCache[cacheKey] = cacheData;
+                this.saveLocalCache();
+
+                return data;
+            })();
+
+            this.pendingRequests.set(cacheKey, promise);
+            const result = await promise;
+            this.pendingRequests.delete(cacheKey);
+            return result;
+
         } catch (error) {
             console.error(`Error fetching user transactions:`, error);
             return { error: error.message };
@@ -813,28 +838,43 @@ function toggleTransactionDetails(id) {
 // 📊 Admin Users Summary
 // =============================
 
+let summaryCache = null;
+let summaryCacheTime = 0;
+
 async function loadAdminUsersSummary() {
     const container = document.getElementById('adminUsersSummary');
+    
+    // Show cached data immediately if available
+    if (summaryCache && (Date.now() - summaryCacheTime < 5000)) {
+        container.innerHTML = summaryCache;
+        return;
+    }
+
+    // Show loading state
+    container.innerHTML = `
+        <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
+    `;
     
     try {
         const users = await api.getSheet('user_credentials');
         
         if (!users || users.error || !Array.isArray(users) || users.length === 0) {
-            container.innerHTML = `
+            const html = `
                 <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value">₹0</div></div>
                 <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value">₹0</div></div>
                 <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value">₹0</div></div>
                 <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value">₹0</div></div>
             `;
+            container.innerHTML = html;
+            summaryCache = html;
+            summaryCacheTime = Date.now();
             return;
         }
 
-        let toGetPending = 0;
-        let toGetCompleted = 0;
-        let toGivePending = 0;
-        let toGiveCompleted = 0;
-
-        // Get all transactions master to know the mode
+        // Get all transactions master to know the admin mode
         const masterTransactions = await api.getSheet('transaction_master');
         const masterMap = {};
         if (masterTransactions && Array.isArray(masterTransactions)) {
@@ -843,13 +883,23 @@ async function loadAdminUsersSummary() {
             });
         }
 
-        // Process each user's transactions
-        for (const user of users) {
+        let toGetPending = 0;
+        let toGetCompleted = 0;
+        let toGivePending = 0;
+        let toGiveCompleted = 0;
+
+        // Process each user's transactions in parallel for speed
+        const userPromises = users.map(async (user) => {
             const username = user.username;
-            if (!username) continue;
+            if (!username) return null;
             
             const userTxns = await api.getUserTransactions(username);
-            if (!userTxns || !Array.isArray(userTxns)) continue;
+            if (!userTxns || !Array.isArray(userTxns)) return null;
+            
+            let userToGetPending = 0;
+            let userToGetCompleted = 0;
+            let userToGivePending = 0;
+            let userToGiveCompleted = 0;
             
             for (const txn of userTxns) {
                 const tid = txn.transaction_id;
@@ -860,27 +910,47 @@ async function loadAdminUsersSummary() {
                 const amount = parseFloat(txn.amount) || 0;
                 const status = txn.status || 'pending';
                 
-                // Admin mode 'to give' means user should see 'to get'
-                // Admin mode 'to get' means user should see 'to give'
-                const userMode = adminMode === 'to give' ? 'to get' : 'to give';
+                // Admin mode 'to give' -> User sees 'to get'
+                // Admin mode 'to get' -> User sees 'to give'
+                const userMode = adminMode === 'to give' ? 'to get' : 
+                                adminMode === 'to get' ? 'to give' : adminMode;
                 
                 if (userMode === 'to get') {
                     if (status === 'pending') {
-                        toGetPending += amount;
+                        userToGetPending += amount;
                     } else if (status === 'completed') {
-                        toGetCompleted += amount;
+                        userToGetCompleted += amount;
                     }
                 } else if (userMode === 'to give') {
                     if (status === 'pending') {
-                        toGivePending += amount;
+                        userToGivePending += amount;
                     } else if (status === 'completed') {
-                        toGiveCompleted += amount;
+                        userToGiveCompleted += amount;
                     }
                 }
             }
+            
+            return {
+                toGetPending: userToGetPending,
+                toGetCompleted: userToGetCompleted,
+                toGivePending: userToGivePending,
+                toGiveCompleted: userToGiveCompleted
+            };
+        });
+
+        const results = await Promise.all(userPromises);
+        
+        // Aggregate results
+        for (const result of results) {
+            if (result) {
+                toGetPending += result.toGetPending;
+                toGetCompleted += result.toGetCompleted;
+                toGivePending += result.toGivePending;
+                toGiveCompleted += result.toGiveCompleted;
+            }
         }
 
-        container.innerHTML = `
+        const html = `
             <div class="summary-card toget">
                 <div class="label">To Get (Pending)</div>
                 <div class="value">₹${toGetPending.toFixed(2)}</div>
@@ -898,6 +968,10 @@ async function loadAdminUsersSummary() {
                 <div class="value">₹${toGiveCompleted.toFixed(2)}</div>
             </div>
         `;
+
+        container.innerHTML = html;
+        summaryCache = html;
+        summaryCacheTime = Date.now();
 
     } catch (error) {
         console.error('Error loading admin users summary:', error);
@@ -917,7 +991,7 @@ async function loadAdminUsers() {
     `;
 
     try {
-        // Load summary first
+        // Load summary first (fast)
         await loadAdminUsersSummary();
 
         const users = await api.getSheet('user_credentials');
@@ -1604,6 +1678,9 @@ async function submitAddTransaction(event) {
             await api.addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date);
             
             showAddTransactionSuccess('Transaction added successfully to all users!');
+            // Clear summary cache so it reloads fresh
+            summaryCache = null;
+            summaryCacheTime = 0;
             setTimeout(() => {
                 closeAddTransactionModal();
                 loadAdminTransactions();
@@ -1738,6 +1815,8 @@ async function submitEditTransaction(event) {
 
         if (result && result.success) {
             showEditTransactionSuccess('Transaction updated successfully!');
+            summaryCache = null;
+            summaryCacheTime = 0;
             setTimeout(() => {
                 closeEditTransactionModal();
                 loadAdminTransactions();
@@ -2008,6 +2087,8 @@ async function executeDelete() {
             result = await api.deleteTransaction(deleteTarget.transactionId);
             if (result && result.success) {
                 showNotification('Transaction deleted successfully!', 'success');
+                summaryCache = null;
+                summaryCacheTime = 0;
                 await loadAdminTransactions();
                 await loadAdminUsers(); // Refresh users to update summary
             } else {
@@ -2017,6 +2098,8 @@ async function executeDelete() {
             result = await api.deleteUserTransaction(deleteTarget.username, deleteTarget.transactionId);
             if (result && result.success) {
                 showNotification('User transaction deleted successfully!', 'success');
+                summaryCache = null;
+                summaryCacheTime = 0;
                 await loadAdminUsers();
             } else {
                 throw new Error(result?.error || 'Failed to delete user transaction');
@@ -2275,6 +2358,8 @@ async function submitUserTransactionEdit(event) {
 
         if (result && result.success) {
             showUserEditSuccess('User transaction updated successfully!');
+            summaryCache = null;
+            summaryCacheTime = 0;
             setTimeout(() => {
                 closeUserTransactionEditModal();
                 loadAdminUsers();
@@ -2345,6 +2430,8 @@ async function submitAddUser(event) {
         if (result && result.success) {
             showAddUserSuccess('User added successfully!');
             document.getElementById('addUserForm').reset();
+            summaryCache = null;
+            summaryCacheTime = 0;
             setTimeout(() => {
                 closeAddUserModal();
                 loadAdminUsers();
@@ -2434,6 +2521,8 @@ async function submitEditUser(event) {
 
         if (result && result.success) {
             showEditUserSuccess('User updated successfully!');
+            summaryCache = null;
+            summaryCacheTime = 0;
             
             if (username === currentUser.username && newPassword) {
                 showNotification('Password changed. Please login again.', 'warning', 3000);
