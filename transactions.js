@@ -22,7 +22,6 @@ class GoogleSheetsAPI {
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
-        this.pendingRequests = new Map();
     }
 
     initLocalCache() {
@@ -61,41 +60,30 @@ class GoogleSheetsAPI {
             }
         }
 
-        // Prevent duplicate requests
-        if (this.pendingRequests.has(cacheKey)) {
-            return this.pendingRequests.get(cacheKey);
-        }
+        try {
+            const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${now}`;
 
-        const promise = (async () => {
-            try {
-                const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${now}`;
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                const data = await response.json();
+            const data = await response.json();
 
-                const cacheData = { data, timestamp: now };
-                if (useCache) {
-                    this.cache.set(cacheKey, cacheData);
-                    this.localCache[cacheKey] = cacheData;
-                    this.saveLocalCache();
-                }
-
-                return data;
-            } catch (error) {
-                console.error(`Error fetching ${sheetName}:`, error);
-                return { error: error.message };
-            } finally {
-                this.pendingRequests.delete(cacheKey);
+            const cacheData = { data, timestamp: now };
+            if (useCache) {
+                this.cache.set(cacheKey, cacheData);
+                this.localCache[cacheKey] = cacheData;
+                this.saveLocalCache();
             }
-        })();
 
-        this.pendingRequests.set(cacheKey, promise);
-        return promise;
+            return data;
+        } catch (error) {
+            console.error(`Error fetching ${sheetName}:`, error);
+            return { error: error.message };
+        }
     }
 
     async getBatchSheets(sheetNames) {
@@ -112,7 +100,6 @@ class GoogleSheetsAPI {
         this.cache.clear();
         this.localCache = {};
         localStorage.removeItem('transaction_cache');
-        this.pendingRequests.clear();
     }
 
     async addRow(sheetName, row) {
@@ -283,29 +270,17 @@ class GoogleSheetsAPI {
                 }
             }
 
-            if (this.pendingRequests.has(cacheKey)) {
-                return this.pendingRequests.get(cacheKey);
-            }
+            const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            const promise = (async () => {
-                const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            
+            const cacheData = { data, timestamp: Date.now() };
+            this.cache.set(cacheKey, cacheData);
+            this.localCache[cacheKey] = cacheData;
+            this.saveLocalCache();
 
-                const data = await response.json();
-                
-                const cacheData = { data, timestamp: Date.now() };
-                this.cache.set(cacheKey, cacheData);
-                this.localCache[cacheKey] = cacheData;
-                this.saveLocalCache();
-
-                return data;
-            })();
-
-            this.pendingRequests.set(cacheKey, promise);
-            const result = await promise;
-            this.pendingRequests.delete(cacheKey);
-            return result;
-
+            return data;
         } catch (error) {
             console.error(`Error fetching user transactions:`, error);
             return { error: error.message };
@@ -838,43 +813,28 @@ function toggleTransactionDetails(id) {
 // 📊 Admin Users Summary
 // =============================
 
-let summaryCache = null;
-let summaryCacheTime = 0;
-
 async function loadAdminUsersSummary() {
     const container = document.getElementById('adminUsersSummary');
-    
-    // Show cached data immediately if available
-    if (summaryCache && (Date.now() - summaryCacheTime < 5000)) {
-        container.innerHTML = summaryCache;
-        return;
-    }
-
-    // Show loading state
-    container.innerHTML = `
-        <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
-        <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
-        <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
-        <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value"><i class="fas fa-spinner fa-spin"></i></div></div>
-    `;
     
     try {
         const users = await api.getSheet('user_credentials');
         
         if (!users || users.error || !Array.isArray(users) || users.length === 0) {
-            const html = `
+            container.innerHTML = `
                 <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value">₹0</div></div>
                 <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value">₹0</div></div>
                 <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value">₹0</div></div>
                 <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value">₹0</div></div>
             `;
-            container.innerHTML = html;
-            summaryCache = html;
-            summaryCacheTime = Date.now();
             return;
         }
 
-        // Get all transactions master
+        let toGetPending = 0;
+        let toGetCompleted = 0;
+        let toGivePending = 0;
+        let toGiveCompleted = 0;
+
+        // Get all transactions master to know the mode
         const masterTransactions = await api.getSheet('transaction_master');
         const masterMap = {};
         if (masterTransactions && Array.isArray(masterTransactions)) {
@@ -883,70 +843,44 @@ async function loadAdminUsersSummary() {
             });
         }
 
-        let toGetPending = 0;
-        let toGetCompleted = 0;
-        let toGivePending = 0;
-        let toGiveCompleted = 0;
-
-        // Process each user's transactions in parallel for speed
-        const userPromises = users.map(async (user) => {
+        // Process each user's transactions
+        for (const user of users) {
             const username = user.username;
-            if (!username) return null;
+            if (!username) continue;
             
             const userTxns = await api.getUserTransactions(username);
-            if (!userTxns || !Array.isArray(userTxns)) return null;
-            
-            let userToGetPending = 0;
-            let userToGetCompleted = 0;
-            let userToGivePending = 0;
-            let userToGiveCompleted = 0;
+            if (!userTxns || !Array.isArray(userTxns)) continue;
             
             for (const txn of userTxns) {
                 const tid = txn.transaction_id;
                 const master = masterMap[tid];
                 if (!master) continue;
                 
-                // Use the mode directly from master (no swap)
-                const mode = master.mode || 'to get';
+                const adminMode = master.mode || 'to get';
                 const amount = parseFloat(txn.amount) || 0;
                 const status = txn.status || 'pending';
                 
-                if (mode === 'to get') {
+                // Admin mode 'to give' means user should see 'to get'
+                // Admin mode 'to get' means user should see 'to give'
+                const userMode = adminMode === 'to give' ? 'to get' : 'to give';
+                
+                if (userMode === 'to get') {
                     if (status === 'pending') {
-                        userToGetPending += amount;
+                        toGetPending += amount;
                     } else if (status === 'completed') {
-                        userToGetCompleted += amount;
+                        toGetCompleted += amount;
                     }
-                } else if (mode === 'to give') {
+                } else if (userMode === 'to give') {
                     if (status === 'pending') {
-                        userToGivePending += amount;
+                        toGivePending += amount;
                     } else if (status === 'completed') {
-                        userToGiveCompleted += amount;
+                        toGiveCompleted += amount;
                     }
                 }
             }
-            
-            return {
-                toGetPending: userToGetPending,
-                toGetCompleted: userToGetCompleted,
-                toGivePending: userToGivePending,
-                toGiveCompleted: userToGiveCompleted
-            };
-        });
-
-        const results = await Promise.all(userPromises);
-        
-        // Aggregate results
-        for (const result of results) {
-            if (result) {
-                toGetPending += result.toGetPending;
-                toGetCompleted += result.toGetCompleted;
-                toGivePending += result.toGivePending;
-                toGiveCompleted += result.toGiveCompleted;
-            }
         }
 
-        const html = `
+        container.innerHTML = `
             <div class="summary-card toget">
                 <div class="label">To Get (Pending)</div>
                 <div class="value">₹${toGetPending.toFixed(2)}</div>
@@ -964,10 +898,6 @@ async function loadAdminUsersSummary() {
                 <div class="value">₹${toGiveCompleted.toFixed(2)}</div>
             </div>
         `;
-
-        container.innerHTML = html;
-        summaryCache = html;
-        summaryCacheTime = Date.now();
 
     } catch (error) {
         console.error('Error loading admin users summary:', error);
@@ -987,7 +917,7 @@ async function loadAdminUsers() {
     `;
 
     try {
-        // Load summary first (fast)
+        // Load summary first
         await loadAdminUsersSummary();
 
         const users = await api.getSheet('user_credentials');
@@ -1033,11 +963,14 @@ async function loadAdminUsers() {
                 const statusClass = status === 'completed' ? 'status-completed' : 
                                    status === 'cancelled' ? 'status-cancelled' : 'status-pending';
                 
-                // Use mode directly from master (no swap)
-                const mode = transaction ? transaction.mode : 'to get';
-                const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+                // Get admin mode from master
+                const adminMode = transaction ? transaction.mode : 'to get';
+                // For user display: swap the mode
+                const userMode = adminMode === 'to give' ? 'to get' : 
+                                adminMode === 'to get' ? 'to give' : adminMode;
+                const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
                 const amount = t.amount || 0;
-                const amountClass = mode === 'to get' ? 'get' : 'give';
+                const amountClass = userMode === 'to get' ? 'get' : 'give';
 
                 return `
                     <div class="user-transaction-item">
@@ -1045,7 +978,7 @@ async function loadAdminUsers() {
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-gray-800">${title}</div>
                                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span class="mode-badge ${modeClass} text-xs">${mode}</span>
+                                    <span class="mode-badge ${modeClass} text-xs">${userMode}</span>
                                     <span class="status-badge ${statusClass}">${status}</span>
                                     <span class="text-sm text-gray-500">${t.date || 'N/A'}</span>
                                 </div>
@@ -1671,9 +1604,6 @@ async function submitAddTransaction(event) {
             await api.addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date);
             
             showAddTransactionSuccess('Transaction added successfully to all users!');
-            // Clear summary cache so it reloads fresh
-            summaryCache = null;
-            summaryCacheTime = 0;
             setTimeout(() => {
                 closeAddTransactionModal();
                 loadAdminTransactions();
@@ -1808,8 +1738,6 @@ async function submitEditTransaction(event) {
 
         if (result && result.success) {
             showEditTransactionSuccess('Transaction updated successfully!');
-            summaryCache = null;
-            summaryCacheTime = 0;
             setTimeout(() => {
                 closeEditTransactionModal();
                 loadAdminTransactions();
@@ -2080,8 +2008,6 @@ async function executeDelete() {
             result = await api.deleteTransaction(deleteTarget.transactionId);
             if (result && result.success) {
                 showNotification('Transaction deleted successfully!', 'success');
-                summaryCache = null;
-                summaryCacheTime = 0;
                 await loadAdminTransactions();
                 await loadAdminUsers(); // Refresh users to update summary
             } else {
@@ -2091,8 +2017,6 @@ async function executeDelete() {
             result = await api.deleteUserTransaction(deleteTarget.username, deleteTarget.transactionId);
             if (result && result.success) {
                 showNotification('User transaction deleted successfully!', 'success');
-                summaryCache = null;
-                summaryCacheTime = 0;
                 await loadAdminUsers();
             } else {
                 throw new Error(result?.error || 'Failed to delete user transaction');
@@ -2155,10 +2079,14 @@ async function loadUserTransactions() {
             const status = userTxn?.status || 'pending';
             const amount = userTxn?.amount || transaction.amount || '0';
             
-            // Use mode directly from master (no swap)
-            const mode = transaction.mode || 'to get';
-            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
-            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            // Admin mode from master
+            const adminMode = transaction.mode || 'to get';
+            // For user display: swap the mode
+            const userMode = adminMode === 'to give' ? 'to get' : 
+                            adminMode === 'to get' ? 'to give' : adminMode;
+            
+            const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = userMode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
             
             const statusClass = status === 'completed' ? 'status-completed' : 
                                status === 'cancelled' ? 'status-cancelled' : 'status-pending';
@@ -2190,7 +2118,7 @@ async function loadUserTransactions() {
                         </div>
                         <div class="flex items-center space-x-3 flex-shrink-0">
                             ${status !== 'pending' ? `<span class="status-badge ${statusClass}">${status}</span>` : ''}
-                            ${amount > 0 ? `<span class="transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
+                            ${amount > 0 ? `<span class="transaction-amount ${userMode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
                             <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
                         </div>
                     </div>
@@ -2204,7 +2132,7 @@ async function loadUserTransactions() {
                                 </div>
                                 <div>
                                     <div class="detail-label">Mode</div>
-                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${userMode}</span></div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Amount</div>
@@ -2347,8 +2275,6 @@ async function submitUserTransactionEdit(event) {
 
         if (result && result.success) {
             showUserEditSuccess('User transaction updated successfully!');
-            summaryCache = null;
-            summaryCacheTime = 0;
             setTimeout(() => {
                 closeUserTransactionEditModal();
                 loadAdminUsers();
@@ -2419,8 +2345,6 @@ async function submitAddUser(event) {
         if (result && result.success) {
             showAddUserSuccess('User added successfully!');
             document.getElementById('addUserForm').reset();
-            summaryCache = null;
-            summaryCacheTime = 0;
             setTimeout(() => {
                 closeAddUserModal();
                 loadAdminUsers();
@@ -2510,8 +2434,6 @@ async function submitEditUser(event) {
 
         if (result && result.success) {
             showEditUserSuccess('User updated successfully!');
-            summaryCache = null;
-            summaryCacheTime = 0;
             
             if (username === currentUser.username && newPassword) {
                 showNotification('Password changed. Please login again.', 'warning', 3000);
