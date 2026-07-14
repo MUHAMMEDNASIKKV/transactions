@@ -1,7 +1,3 @@
-// =============================
-// 🚀 FAST & FURIOUS TRANSACTION MANAGER
-// =============================
-
 // 🌐 Global Variables
 let currentUser = null;
 let currentPage = 'adminTransactions';
@@ -9,195 +5,140 @@ let currentEditTransaction = null;
 let currentUserEdit = null;
 let deleteTarget = null;
 
-// 🧠 Advanced Cache System
-const CACHE = {
+// Cache for better performance
+const dataCache = {
     users: null,
     transactions: null,
     union: null,
-    userTransactions: {},
-    lastUpdated: 0,
-    cacheDuration: 60000, // 1 minute cache
-    pendingRequests: new Map(),
-    freshStart: true
+    lastUpdated: null,
+    userTransactions: {}
 };
 
 // =============================
-// 📊 Google Sheets API - ULTRA FAST
+// 📊 Google Sheets Integration - Optimized
 // =============================
-class UltraFastSheetsAPI {
+class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbzM3fIkchCl9xHXZ-peu__s8XoSL4e6AsChywXI-3CM1MRJAkAjnzBQfQ7AhOlBPIb-8Q/exec";
-        this.requestQueue = [];
-        this.isProcessing = false;
-        this.batchSize = 5;
-        this.retryDelay = 1000;
-        this.maxRetries = 3;
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbwDOFd6E8fNml5Gk5TmIJQX8t08WCPe1iM0cbwokh_PFsU7X3EcqZ8u7aPW46Iy_OljNQ/exec";
+        this.cache = new Map();
+        this.pendingRequests = new Map();
+        this.cacheTimeout = 60000; // 1 minute
     }
 
-    // 🚀 Parallel batch fetch
-    async getBatchSheets(sheetNames) {
-        const promises = sheetNames.map(name => this.getSheet(name));
-        const results = await Promise.all(promises);
-        const batchResult = {};
-        sheetNames.forEach((name, index) => {
-            batchResult[name] = results[index];
-        });
-        return batchResult;
-    }
+    async getSheet(sheetName, useCache = true) {
+        const cacheKey = sheetName;
+        const now = Date.now();
 
-    // ⚡ Super fast single sheet fetch with deduplication
-    async getSheet(sheetName, forceRefresh = false) {
-        const cacheKey = `sheet_${sheetName}`;
-        
-        // Check memory cache first (fastest)
-        if (!forceRefresh && CACHE[cacheKey]) {
-            const cache = CACHE[cacheKey];
-            if (Date.now() - cache.timestamp < CACHE.cacheDuration) {
-                return cache.data;
+        // Check memory cache
+        if (useCache && this.cache.has(cacheKey)) {
+            const cached = this.cache.get(cacheKey);
+            if (now - cached.timestamp < this.cacheTimeout) {
+                return cached.data;
             }
         }
 
-        // Check for pending request (deduplication)
-        if (CACHE.pendingRequests.has(cacheKey)) {
-            return CACHE.pendingRequests.get(cacheKey);
+        // Prevent duplicate requests
+        if (this.pendingRequests.has(cacheKey)) {
+            return this.pendingRequests.get(cacheKey);
         }
 
-        // Create request promise
-        const requestPromise = this._fetchSheet(sheetName);
-        CACHE.pendingRequests.set(cacheKey, requestPromise);
+        const promise = this._fetchSheet(sheetName, cacheKey);
+        this.pendingRequests.set(cacheKey, promise);
 
         try {
-            const data = await requestPromise;
-            CACHE[cacheKey] = {
-                data: data,
-                timestamp: Date.now()
-            };
-            return data;
+            const result = await promise;
+            return result;
         } finally {
-            CACHE.pendingRequests.delete(cacheKey);
+            this.pendingRequests.delete(cacheKey);
         }
     }
 
-    async _fetchSheet(sheetName, retryCount = 0) {
+    async _fetchSheet(sheetName, cacheKey) {
         try {
-            const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&_=${Date.now()}`;
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-
+            const url = `${this.apiUrl}?sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
             const response = await fetch(url, {
                 method: 'GET',
-                headers: { 
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache'
-                },
-                signal: controller.signal
+                headers: { 'Accept': 'application/json' }
             });
 
-            clearTimeout(timeoutId);
-
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
+
             const data = await response.json();
+
+            // Cache the result
+            this.cache.set(cacheKey, { data, timestamp: Date.now() });
+
             return data;
         } catch (error) {
-            if (retryCount < this.maxRetries) {
-                await new Promise(r => setTimeout(r, this.retryDelay * (retryCount + 1)));
-                return this._fetchSheet(sheetName, retryCount + 1);
-            }
             console.error(`Error fetching ${sheetName}:`, error);
             return { error: error.message };
         }
     }
 
-    // ⚡ Fast POST with queue
-    async post(action, data) {
-        return new Promise((resolve) => {
-            this.requestQueue.push({ action, data, resolve });
-            this._processQueue();
+    async getBatchSheets(sheetNames) {
+        const uniqueSheets = [...new Set(sheetNames)];
+        const results = await Promise.all(uniqueSheets.map(name => this.getSheet(name)));
+        const batchResult = {};
+        uniqueSheets.forEach((name, index) => {
+            batchResult[name] = results[index];
         });
+        return batchResult;
     }
 
-    async _processQueue() {
-        if (this.isProcessing || this.requestQueue.length === 0) return;
-        this.isProcessing = true;
-
-        // Process up to batchSize requests in parallel
-        const batch = this.requestQueue.splice(0, this.batchSize);
-        
-        const promises = batch.map(async ({ action, data, resolve }) => {
-            try {
-                const result = await this._executePost(action, data);
-                resolve(result);
-            } catch (error) {
-                resolve({ error: error.message });
-            }
-        });
-
-        await Promise.all(promises);
-        this.isProcessing = false;
-        if (this.requestQueue.length > 0) {
-            this._processQueue();
+    clearCache(sheetName = null) {
+        if (sheetName) {
+            this.cache.delete(sheetName);
+            this.pendingRequests.delete(sheetName);
+        } else {
+            this.cache.clear();
+            this.pendingRequests.clear();
         }
     }
 
-    async _executePost(action, data) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
+    async addRow(sheetName, row) {
         try {
-            const payload = { ...data, action };
-            
             const response = await fetch(this.apiUrl, {
                 method: "POST",
-                headers: { 
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Accept": "application/json"
-                },
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
-                    data: JSON.stringify(payload)
-                }),
-                signal: controller.signal
+                    sheet: sheetName,
+                    data: JSON.stringify(row)
+                })
             });
 
-            clearTimeout(timeoutId);
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
             const result = await response.json();
-            
-            // Invalidate cache on successful write
-            if (result && result.success) {
-                this._invalidateCache();
-            }
-            
+            this.clearCache(sheetName);
             return result;
         } catch (error) {
-            clearTimeout(timeoutId);
             return { error: error.message };
         }
     }
 
-    _invalidateCache() {
-        // Clear sheet caches
-        Object.keys(CACHE).forEach(key => {
-            if (key.startsWith('sheet_')) {
-                delete CACHE[key];
-            }
-        });
-        CACHE.users = null;
-        CACHE.transactions = null;
-        CACHE.union = null;
-        CACHE.userTransactions = {};
-        CACHE.lastUpdated = Date.now();
+    async updatePassword(username, newPassword) {
+        try {
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    sheet: "password_updates",
+                    data: JSON.stringify([username, newPassword])
+                })
+            });
+
+            const result = await response.json();
+            this.clearCache("user_credentials");
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
-    // 📤 Fast file upload
     async uploadFile(username, transactionId, file) {
         try {
-            const base64Data = await this._fileToBase64(file);
-
+            const base64Data = await this.fileToBase64(file);
             const payload = {
+                sheet: 'uploads',
+                action: 'uploadFile',
                 username: username,
                 transactionId: transactionId,
                 fileName: file.name,
@@ -205,122 +146,284 @@ class UltraFastSheetsAPI {
                 fileData: base64Data
             };
 
-            const result = await this.post('uploadFile', payload);
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            return await response.json();
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = (error) => reject(error);
+        });
+    }
+
+    async updateTransaction(transactionId, title, mode, amount, billUrl, date) {
+        try {
+            const payload = {
+                action: 'updateTransaction',
+                transactionId, title, mode, amount, billUrl, date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('transaction_master');
             return result;
         } catch (error) {
             return { error: error.message };
         }
     }
 
-    _fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                const base64 = reader.result.split(',')[1];
-                resolve(base64);
-            };
-            reader.onerror = (error) => reject(error);
-        });
-    }
-
-    // 🚀 Fast operations
-    async addRow(sheetName, row) {
-        return this.post('addRow', { sheet: sheetName, data: row });
-    }
-
-    async updateTransaction(transactionId, title, mode, amount, billUrl, date) {
-        return this.post('updateTransaction', {
-            transactionId, title, mode, amount, billUrl, date
-        });
-    }
-
     async updateUserTransaction(username, transactionId, mode, status, amount, date) {
-        return this.post('updateUserTransaction', {
-            username, transactionId, mode, status, amount, date
-        });
+        try {
+            const payload = {
+                action: 'updateUserTransaction',
+                username, transactionId, mode, status, amount, date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache(`${username}_transactions`);
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async getUserTransactions(username) {
-        const cacheKey = `user_${username}`;
-        
-        if (CACHE.userTransactions[cacheKey]) {
-            const cache = CACHE.userTransactions[cacheKey];
-            if (Date.now() - cache.timestamp < CACHE.cacheDuration) {
-                return cache.data;
+        const cacheKey = `${username}_transactions`;
+
+        if (this.cache.has(cacheKey)) {
+            const cached = this.cache.get(cacheKey);
+            if (Date.now() - cached.timestamp < this.cacheTimeout) {
+                return cached.data;
             }
         }
 
-        const data = await this.getSheet(`${username}_transactions`);
-        CACHE.userTransactions[cacheKey] = {
-            data: data,
-            timestamp: Date.now()
-        };
-        return data;
+        if (this.pendingRequests.has(cacheKey)) {
+            return this.pendingRequests.get(cacheKey);
+        }
+
+        const promise = this._fetchUserTransactions(username, cacheKey);
+        this.pendingRequests.set(cacheKey, promise);
+
+        try {
+            const result = await promise;
+            return result;
+        } finally {
+            this.pendingRequests.delete(cacheKey);
+        }
+    }
+
+    async _fetchUserTransactions(username, cacheKey) {
+        try {
+            const response = await fetch(`${this.apiUrl}?sheet=${username}_transactions&t=${Date.now()}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            this.cache.set(cacheKey, { data, timestamp: Date.now() });
+            return data;
+        } catch (error) {
+            console.error(`Error fetching user transactions:`, error);
+            return { error: error.message };
+        }
     }
 
     async addUser(username, password, fullName, role) {
-        return this.post('addUser', { username, password, fullName, role });
+        try {
+            const payload = {
+                action: 'addUser',
+                username, password, fullName, role: role || 'user'
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('user_credentials');
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async updateUser(username, fullName, role, newPassword) {
-        return this.post('updateUser', { username, fullName, role, newPassword });
+        try {
+            const payload = {
+                action: 'updateUser',
+                username, fullName, role, newPassword: newPassword || ''
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('user_credentials');
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date) {
-        return this.post('addTransactionToAllUsers', {
-            transactionId, title, mode, amount, billUrl, date
-        });
+        try {
+            const payload = {
+                action: 'addTransactionToAllUsers',
+                transactionId, title, mode, amount, billUrl, date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache();
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
+    // Union Operations
     async addUnionTransaction(transactionId, title, type, amount, billUrl, status, date) {
-        return this.post('addUnionTransaction', {
-            transactionId, title, type, amount, billUrl, status, date
-        });
+        try {
+            const payload = {
+                action: 'addUnionTransaction',
+                transactionId, title, type, amount, billUrl, status, date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('union');
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async updateUnionTransaction(transactionId, title, type, amount, billUrl, status, date) {
-        return this.post('updateUnionTransaction', {
-            transactionId, title, type, amount, billUrl, status, date
-        });
+        try {
+            const payload = {
+                action: 'updateUnionTransaction',
+                transactionId, title, type, amount, billUrl, status, date
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('union');
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async deleteUnionTransaction(transactionId) {
-        return this.post('deleteUnionTransaction', { transactionId });
+        try {
+            const payload = {
+                action: 'deleteUnionTransaction',
+                transactionId
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('union');
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async deleteTransaction(transactionId) {
-        return this.post('deleteTransaction', { transactionId });
+        try {
+            const payload = {
+                action: 'deleteTransaction',
+                transactionId
+            };
+
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
+
+            const result = await response.json();
+            this.clearCache('transaction_master');
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 
     async deleteUserTransaction(username, transactionId) {
-        return this.post('deleteUserTransaction', { username, transactionId });
-    }
+        try {
+            const payload = {
+                action: 'deleteUserTransaction',
+                username, transactionId
+            };
 
-    async updatePassword(username, newPassword) {
-        return this.post('updatePassword', { username, newPassword });
-    }
+            const response = await fetch(this.apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ data: JSON.stringify(payload) })
+            });
 
-    clearCache() {
-        Object.keys(CACHE).forEach(key => {
-            if (key.startsWith('sheet_')) delete CACHE[key];
-        });
-        CACHE.users = null;
-        CACHE.transactions = null;
-        CACHE.union = null;
-        CACHE.userTransactions = {};
+            const result = await response.json();
+            this.clearCache(`${username}_transactions`);
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
     }
 }
 
-const api = new UltraFastSheetsAPI();
+const api = new GoogleSheetsAPI();
 
 // =============================
-// 🔑 Authentication - Instant
+// 🔑 Authentication
 // =============================
-
-// Override login for speed
-const originalLogin = window.login;
-window.login = async function() {
+async function login() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
 
@@ -335,14 +438,11 @@ window.login = async function() {
     loginBtn.disabled = true;
 
     try {
-        // Fast fetch with no cache
-        const users = await api.getSheet("user_credentials", true);
-
+        const users = await api.getSheet("user_credentials", false);
         if (!users || users.error || !Array.isArray(users)) {
             showError('Failed to fetch user data');
             return;
         }
-
         const user = users.find(u => u.username === username && u.password === password);
 
         if (user) {
@@ -366,7 +466,6 @@ window.login = async function() {
             if (currentUser.role === 'admin') {
                 document.getElementById('userNav').classList.add('hidden');
                 document.getElementById('adminNav').classList.remove('hidden');
-                // Load instantly with fresh data
                 await loadAdminData();
                 showPage('adminTransactions');
             } else {
@@ -376,6 +475,7 @@ window.login = async function() {
                 showPage('userTransactions');
             }
             hideError();
+            history.pushState(null, '', window.location.href);
         } else {
             showError('Invalid username or password');
         }
@@ -385,27 +485,31 @@ window.login = async function() {
         loginBtn.innerHTML = originalText;
         loginBtn.disabled = false;
     }
-};
+}
 
-// Override logout
-const originalLogout = window.logout;
-window.logout = function() {
+function logout() {
     sessionStorage.removeItem('transaction_session');
     currentUser = null;
     api.clearCache();
-    
+
     document.getElementById('loginPage').classList.remove('hidden');
     document.getElementById('dashboardContainer').classList.add('hidden');
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
     hideError();
     showLogin();
-};
+    history.pushState(null, '', window.location.href);
+}
 
 // =============================
-// 📍 Navigation - Instant
+// 📍 Navigation - Optimized
 // =============================
-window.showPage = async function(page) {
+let pendingPageLoad = null;
+
+async function showPage(page) {
+    // Close any open modals
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+
     document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active-admin', 'active-user');
@@ -419,44 +523,82 @@ window.showPage = async function(page) {
     });
 
     if (clickedBtn) {
-        if (currentUser && currentUser.role === 'admin') {
-            clickedBtn.classList.add('active-admin');
-        } else {
-            clickedBtn.classList.add('active-user');
-        }
+        clickedBtn.classList.add(currentUser?.role === 'admin' ? 'active-admin' : 'active-user');
     }
 
     currentPage = page;
 
-    // Load data only if needed
-    if (page === 'adminTransactions') {
-        await loadAdminTransactions();
-    } else if (page === 'adminUsers') {
-        await loadAdminUsers();
-    } else if (page === 'adminUnion') {
-        await loadUnionData();
-    } else if (page === 'userTransactions') {
-        await loadUserTransactions();
-    } else if (page === 'userUnion') {
-        await loadUserUnionTransactions();
+    // Cancel pending load
+    if (pendingPageLoad) {
+        pendingPageLoad = null;
     }
-};
+
+    // Load page data with priority
+    const loaders = {
+        'adminTransactions': () => loadAdminTransactions(),
+        'adminUsers': () => loadAdminUsers(),
+        'adminUnion': () => loadUnionData(),
+        'userTransactions': () => loadUserTransactions(),
+        'userUnion': () => loadUserUnionTransactions()
+    };
+
+    if (loaders[page]) {
+        // Show skeleton immediately
+        const containerMap = {
+            'adminTransactions': 'adminTransactionsList',
+            'adminUsers': 'adminUsersList',
+            'adminUnion': 'unionTransactionsList',
+            'userTransactions': 'userTransactionsList',
+            'userUnion': 'userUnionTransactionsList'
+        };
+        const container = document.getElementById(containerMap[page]);
+        if (container) {
+            container.innerHTML = this._getSkeletonHTML();
+        }
+
+        // Use requestIdleCallback for non-critical loading
+        if (page === 'adminUsers') {
+            // Load summary immediately, users list with slight delay
+            await loadAdminUsersSummary();
+            setTimeout(() => loaders[page](), 50);
+        } else {
+            await loaders[page]();
+        }
+    }
+}
+
+function _getSkeletonHTML() {
+    return `
+        <div class="space-y-3">
+            ${Array(5).fill(0).map(() => `
+                <div class="bg-white rounded-xl p-4 border border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl skeleton-loader"></div>
+                        <div class="flex-1">
+                            <div class="h-4 w-3/4 skeleton-loader rounded"></div>
+                            <div class="h-3 w-1/2 skeleton-loader rounded mt-2"></div>
+                        </div>
+                        <div class="w-16 h-6 skeleton-loader rounded-full"></div>
+                        <div class="w-12 h-5 skeleton-loader rounded"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
 
 // =============================
-// 👨‍💼 Admin Functions - FAST
+// 👨‍💼 Admin Functions - Optimized
 // =============================
 async function loadAdminData() {
     try {
-        // Preload all data in parallel
         const [transactions, users] = await Promise.all([
             api.getSheet('transaction_master'),
             api.getSheet('user_credentials')
         ]);
-        
-        CACHE.transactions = transactions;
-        CACHE.users = users;
-        
-        await loadAdminTransactions();
+        dataCache.transactions = transactions;
+        dataCache.users = users;
+        dataCache.lastUpdated = Date.now();
     } catch (error) {
         console.error('Error loading admin data:', error);
     }
@@ -464,139 +606,101 @@ async function loadAdminData() {
 
 async function loadAdminTransactions() {
     const container = document.getElementById('adminTransactionsList');
-    
-    // Show cached data instantly if available
-    if (CACHE.transactions && Array.isArray(CACHE.transactions) && CACHE.transactions.length > 0) {
-        renderTransactions(container, CACHE.transactions);
-        // Refresh in background
-        api.getSheet('transaction_master', true).then(data => {
-            if (data && Array.isArray(data) && data.length > 0) {
-                CACHE.transactions = data;
-                renderTransactions(container, data);
-            }
-        });
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
-            <p class="mt-3 text-gray-500">Loading transactions...</p>
-        </div>
-    `;
 
     try {
-        const transactions = await api.getSheet('transaction_master');
-        CACHE.transactions = transactions;
-        renderTransactions(container, transactions);
+        const transactions = dataCache.transactions || await api.getSheet('transaction_master');
+        dataCache.transactions = transactions;
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exchange-alt"></i>
+                    <h3>No Transactions</h3>
+                    <p>Click "Add Transaction" to create your first transaction.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const sortedTransactions = [...transactions].sort((a, b) => {
+            const dateA = new Date(a.date || a.transaction_date || 0);
+            const dateB = new Date(b.date || b.transaction_date || 0);
+            return dateB - dateA;
+        });
+
+        // Use DocumentFragment for batch rendering
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = sortedTransactions.map(transaction => {
+            const mode = transaction.mode || 'to get';
+            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            const amount = transaction.amount || '0';
+            const tid = transaction.transaction_id || transaction.id;
+
+            const dateStr = transaction.date || transaction.transaction_date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ?
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` :
+                '<span class="text-gray-400 text-xs">No bill</span>';
+
+            return `
+                <div class="transaction-card">
+                    <div class="transaction-header" onclick="toggleTransactionDetails('${tid}')">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="mode-badge ${modeClass}">${mode}</span>
+                            <span class="font-bold text-gray-700 text-sm">₹${amount}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="arrow-${tid}"></i>
+                        </div>
+                    </div>
+                    <div class="details-container" id="details-${tid}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div><div class="detail-label">ID</div><div class="detail-value">${tid}</div></div>
+                                <div><div class="detail-label">Mode</div><div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div></div>
+                                <div><div class="detail-label">Amount</div><div class="detail-value font-bold">₹${amount}</div></div>
+                                <div><div class="detail-label">Date</div><div class="detail-value">${formattedDate}</div></div>
+                                <div class="md:col-span-2"><div class="detail-label">Bill</div><div class="detail-value">${billLink}</div></div>
+                            </div>
+                            <div class="mt-3 flex gap-2 flex-wrap">
+                                <button onclick="event.stopPropagation(); openEditTransactionModal('${tid}')" class="edit-btn">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button onclick="event.stopPropagation(); confirmDeleteTransaction('${tid}', '${transaction.title || 'Untitled'}', 'transaction_master')" class="delete-btn">
+                                    <i class="fas fa-trash mr-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Use innerHTML for batch insertion (faster than individual appends)
+        container.innerHTML = tempDiv.innerHTML;
+
     } catch (error) {
         console.error('Error loading admin transactions:', error);
         container.innerHTML = `
-            <div class="text-center py-8 text-red-500">
-                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-                <p>Error loading transactions. Please try again.</p>
+            <div class="text-center py-6 text-red-500 text-sm">
+                <i class="fas fa-exclamation-circle text-xl mb-1"></i>
+                <p>Error loading transactions. Please refresh.</p>
             </div>
         `;
     }
-}
-
-function renderTransactions(container, transactions) {
-    if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exchange-alt"></i>
-                <h3>No Transactions</h3>
-                <p>Click "Add Transaction" to create your first transaction.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const sortedTransactions = transactions.sort((a, b) => {
-        const dateA = new Date(a.date || a.transaction_date || 0);
-        const dateB = new Date(b.date || b.transaction_date || 0);
-        return dateB - dateA;
-    });
-
-    const html = sortedTransactions.map(transaction => {
-        const mode = transaction.mode || 'to get';
-        const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
-        const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
-        const amount = transaction.amount || '0';
-        
-        const dateStr = transaction.date || transaction.transaction_date || 'N/A';
-        const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }) : 'N/A';
-
-        const billLink = transaction.bill_url ? 
-            `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
-            '<span class="text-gray-400 text-sm">No bill uploaded</span>';
-
-        const tid = transaction.transaction_id || transaction.id;
-
-        return `
-            <div class="transaction-card">
-                <div class="transaction-header" onclick="toggleTransactionDetails('${tid}')">
-                    <div class="flex items-center min-w-0 flex-1">
-                        <div class="transaction-icon">
-                            <i class="fas ${modeIcon}"></i>
-                        </div>
-                        <div class="transaction-info min-w-0 flex-1">
-                            <h3>${transaction.title || 'Untitled'}</h3>
-                            <p>${formattedDate}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3 flex-shrink-0">
-                        <span class="mode-badge ${modeClass}">${mode}</span>
-                        <span class="font-bold text-gray-700">₹${amount}</span>
-                        <i class="fas fa-chevron-down expand-arrow" id="arrow-${tid}"></i>
-                    </div>
-                </div>
-                
-                <div class="details-container" id="details-${tid}">
-                    <div class="detail-item">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <div class="detail-label">Transaction ID</div>
-                                <div class="detail-value">${tid}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Mode</div>
-                                <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Amount</div>
-                                <div class="detail-value font-bold">₹${amount}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Date & Time</div>
-                                <div class="detail-value">${formattedDate}</div>
-                            </div>
-                            <div class="md:col-span-2">
-                                <div class="detail-label">Bill</div>
-                                <div class="detail-value">${billLink}</div>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex gap-2 flex-wrap">
-                            <button onclick="event.stopPropagation(); openEditTransactionModal('${tid}')" class="edit-btn">
-                                <i class="fas fa-edit mr-1"></i>Edit
-                            </button>
-                            <button onclick="event.stopPropagation(); confirmDeleteTransaction('${tid}', '${transaction.title || 'Untitled'}', 'transaction_master')" class="delete-btn">
-                                <i class="fas fa-trash mr-1"></i>Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = html;
 }
 
 function toggleTransactionDetails(id) {
@@ -622,35 +726,37 @@ function toggleTransactionDetails(id) {
 }
 
 // =============================
-// 📊 Admin Users Summary - FAST
+// 📊 Admin Users Summary - Optimized
 // =============================
+let summaryCache = null;
+let summaryCacheTime = 0;
+
 async function loadAdminUsersSummary() {
     const container = document.getElementById('adminUsersSummary');
-    
-    // Show placeholder instantly
-    container.innerHTML = `
-        <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value">...</div></div>
-        <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value">...</div></div>
-        <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value">...</div></div>
-        <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value">...</div></div>
-    `;
-    
+
+    // Use cache if fresh
+    if (summaryCache && Date.now() - summaryCacheTime < 30000) {
+        container.innerHTML = summaryCache;
+        return;
+    }
+
     try {
         const users = await api.getSheet('user_credentials');
+
         if (!users || users.error || !Array.isArray(users) || users.length === 0) {
-            container.innerHTML = `
+            const emptyHTML = `
                 <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value">₹0</div></div>
                 <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value">₹0</div></div>
                 <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value">₹0</div></div>
                 <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value">₹0</div></div>
             `;
+            container.innerHTML = emptyHTML;
+            summaryCache = emptyHTML;
+            summaryCacheTime = Date.now();
             return;
         }
 
-        let toGetPending = 0;
-        let toGetCompleted = 0;
-        let toGivePending = 0;
-        let toGiveCompleted = 0;
+        let toGetPending = 0, toGetCompleted = 0, toGivePending = 0, toGiveCompleted = 0;
 
         const masterTransactions = await api.getSheet('transaction_master');
         const masterMap = {};
@@ -660,209 +766,198 @@ async function loadAdminUsersSummary() {
             });
         }
 
-        // Process users in parallel
-        const userPromises = users.map(async (user) => {
-            const username = user.username;
-            if (!username) return null;
-            
-            const userTxns = await api.getUserTransactions(username);
-            return { username, transactions: userTxns && Array.isArray(userTxns) ? userTxns : [] };
-        });
+        // Process users in parallel with batching
+        const batchSize = 5;
+        const userPromises = [];
 
-        const userResults = await Promise.all(userPromises);
+        for (let i = 0; i < users.length; i += batchSize) {
+            const batch = users.slice(i, i + batchSize);
+            const batchPromises = batch.map(async (user) => {
+                const username = user.username;
+                if (!username) return null;
 
-        for (const result of userResults) {
-            if (!result) continue;
-            for (const txn of result.transactions) {
-                const tid = txn.transaction_id;
-                const master = masterMap[tid];
-                if (!master) continue;
-                
-                const adminMode = master.mode || 'to get';
-                const amount = parseFloat(txn.amount) || 0;
-                const status = txn.status || 'pending';
-                
-                const userMode = adminMode === 'to give' ? 'to get' : 'to give';
-                
-                if (userMode === 'to get') {
-                    if (status === 'pending') toGetPending += amount;
-                    else if (status === 'completed') toGetCompleted += amount;
-                } else if (userMode === 'to give') {
-                    if (status === 'pending') toGivePending += amount;
-                    else if (status === 'completed') toGiveCompleted += amount;
+                const userTxns = await api.getUserTransactions(username);
+                if (!userTxns || !Array.isArray(userTxns)) return null;
+
+                let toGetP = 0, toGetC = 0, toGiveP = 0, toGiveC = 0;
+
+                for (const txn of userTxns) {
+                    const tid = txn.transaction_id;
+                    const master = masterMap[tid];
+                    if (!master) continue;
+
+                    const adminMode = master.mode || 'to get';
+                    const amount = parseFloat(txn.amount) || 0;
+                    const status = txn.status || 'pending';
+                    const userMode = adminMode === 'to give' ? 'to get' : 'to give';
+
+                    if (userMode === 'to get') {
+                        if (status === 'pending') toGetP += amount;
+                        else if (status === 'completed') toGetC += amount;
+                    } else if (userMode === 'to give') {
+                        if (status === 'pending') toGiveP += amount;
+                        else if (status === 'completed') toGiveC += amount;
+                    }
+                }
+
+                return { toGetP, toGetC, toGiveP, toGiveC };
+            });
+
+            const results = await Promise.all(batchPromises);
+            for (const result of results) {
+                if (result) {
+                    toGetPending += result.toGetP;
+                    toGetCompleted += result.toGetC;
+                    toGivePending += result.toGiveP;
+                    toGiveCompleted += result.toGiveC;
                 }
             }
         }
 
-        container.innerHTML = `
-            <div class="summary-card toget">
-                <div class="label">To Get (Pending)</div>
-                <div class="value">₹${toGetPending.toFixed(2)}</div>
-            </div>
-            <div class="summary-card toget">
-                <div class="label">To Get (Completed)</div>
-                <div class="value">₹${toGetCompleted.toFixed(2)}</div>
-            </div>
-            <div class="summary-card togive">
-                <div class="label">To Give (Pending)</div>
-                <div class="value">₹${toGivePending.toFixed(2)}</div>
-            </div>
-            <div class="summary-card togive">
-                <div class="label">To Give (Completed)</div>
-                <div class="value">₹${toGiveCompleted.toFixed(2)}</div>
-            </div>
+        const html = `
+            <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value">₹${toGetPending.toFixed(2)}</div></div>
+            <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value">₹${toGetCompleted.toFixed(2)}</div></div>
+            <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value">₹${toGivePending.toFixed(2)}</div></div>
+            <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value">₹${toGiveCompleted.toFixed(2)}</div></div>
         `;
+
+        container.innerHTML = html;
+        summaryCache = html;
+        summaryCacheTime = Date.now();
 
     } catch (error) {
         console.error('Error loading admin users summary:', error);
-        container.innerHTML = `
-            <div class="text-center text-red-500 col-span-full">Error loading summary</div>
-        `;
+        container.innerHTML = `<div class="text-center text-red-500 col-span-full text-sm">Error loading summary</div>`;
     }
 }
 
 async function loadAdminUsers() {
     const container = document.getElementById('adminUsersList');
-    
-    // Show cached data instantly
-    if (CACHE.users && Array.isArray(CACHE.users) && CACHE.users.length > 0) {
-        renderUsers(container, CACHE.users);
-        // Refresh in background
-        api.getSheet('user_credentials', true).then(data => {
-            if (data && Array.isArray(data) && data.length > 0) {
-                CACHE.users = data;
-                renderUsers(container, data);
-            }
-        });
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="text-center py-12 col-span-full">
-            <i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i>
-            <p class="mt-3 text-gray-500">Loading users...</p>
-        </div>
-    `;
 
     try {
-        await loadAdminUsersSummary();
-        const users = await api.getSheet('user_credentials');
-        CACHE.users = users;
-        renderUsers(container, users);
-    } catch (error) {
-        console.error('Error loading admin users:', error);
-        container.innerHTML = `
-            <div class="text-center py-8 text-red-500 col-span-full">
-                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-                <p>Error loading users. Please try again.</p>
-            </div>
-        `;
-    }
-}
+        const users = dataCache.users || await api.getSheet('user_credentials');
+        dataCache.users = users;
 
-async function renderUsers(container, users) {
-    if (!users || users.error || !Array.isArray(users) || users.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state col-span-full">
-                <i class="fas fa-users"></i>
-                <h3>No Users</h3>
-                <p>Click "Add User" to create your first user.</p>
-            </div>
-        `;
-        return;
-    }
+        if (!users || users.error || !Array.isArray(users) || users.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state col-span-full">
+                    <i class="fas fa-users"></i>
+                    <h3>No Users</h3>
+                    <p>Click "Add User" to create your first user.</p>
+                </div>
+            `;
+            return;
+        }
 
-    const allTransactions = await api.getSheet('transaction_master');
-    const transactionMap = {};
-    if (allTransactions && Array.isArray(allTransactions)) {
-        allTransactions.forEach(t => {
-            transactionMap[t.transaction_id || t.id] = t;
-        });
-    }
+        const allTransactions = dataCache.transactions || await api.getSheet('transaction_master');
+        dataCache.transactions = allTransactions;
+        const transactionMap = {};
+        if (allTransactions && Array.isArray(allTransactions)) {
+            allTransactions.forEach(t => {
+                transactionMap[t.transaction_id || t.id] = t;
+            });
+        }
 
-    // Fetch user transactions in parallel
-    const userPromises = users.map(async (user) => {
-        const userTransactions = await api.getUserTransactions(user.username);
-        return {
-            ...user,
-            transactions: userTransactions && Array.isArray(userTransactions) ? userTransactions : []
-        };
-    });
+        // Load user transactions in parallel with batching
+        const batchSize = 3;
+        const userPromises = [];
+        const userData = [];
 
-    const usersWithTransactions = await Promise.all(userPromises);
+        for (let i = 0; i < users.length; i += batchSize) {
+            const batch = users.slice(i, i + batchSize);
+            const batchPromises = batch.map(async (user) => {
+                const userTransactions = await api.getUserTransactions(user.username);
+                return {
+                    ...user,
+                    transactions: userTransactions && Array.isArray(userTransactions) ? userTransactions : []
+                };
+            });
+            const results = await Promise.all(batchPromises);
+            userData.push(...results);
+        }
 
-    const html = usersWithTransactions.map(user => {
-        const initials = user.full_name ? 
-            user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 
-            user.username.substring(0, 2).toUpperCase();
+        const html = userData.map(user => {
+            const initials = user.full_name ?
+                user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) :
+                user.username.substring(0, 2).toUpperCase();
 
-        const transactionItems = user.transactions.map(t => {
-            const transaction = transactionMap[t.transaction_id];
-            const title = transaction ? transaction.title : 'Unknown';
-            const status = t.status || 'pending';
-            const statusClass = status === 'completed' ? 'status-completed' : 
-                               status === 'cancelled' ? 'status-cancelled' : 'status-pending';
-            
-            const adminMode = transaction ? transaction.mode : 'to get';
-            const userMode = adminMode === 'to give' ? 'to get' : 
-                            adminMode === 'to get' ? 'to give' : adminMode;
-            const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
-            const amount = t.amount || 0;
-            const amountClass = userMode === 'to get' ? 'get' : 'give';
+            const transactionItems = user.transactions.map(t => {
+                const transaction = transactionMap[t.transaction_id];
+                const title = transaction ? transaction.title : 'Unknown';
+                const status = t.status || 'pending';
+                const statusClass = status === 'completed' ? 'status-completed' :
+                                   status === 'cancelled' ? 'status-cancelled' : 'status-pending';
 
-            return `
-                <div class="user-transaction-item">
-                    <div class="flex justify-between items-center">
-                        <div class="flex-1 min-w-0">
-                            <div class="font-medium text-gray-800">${title}</div>
-                            <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                <span class="mode-badge ${modeClass} text-xs">${userMode}</span>
-                                <span class="status-badge ${statusClass}">${status}</span>
-                                <span class="text-sm text-gray-500">${t.date || 'N/A'}</span>
+                const adminMode = transaction ? transaction.mode : 'to get';
+                const userMode = adminMode === 'to give' ? 'to get' :
+                                adminMode === 'to get' ? 'to give' : adminMode;
+                const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
+                const amount = t.amount || 0;
+                const amountClass = userMode === 'to get' ? 'get' : 'give';
+
+                return `
+                    <div class="user-transaction-item">
+                        <div class="flex justify-between items-center">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-gray-800 text-sm">${title}</div>
+                                <div class="flex items-center gap-1 mt-1 flex-wrap">
+                                    <span class="mode-badge ${modeClass} text-[10px]">${userMode}</span>
+                                    <span class="status-badge ${statusClass}">${status}</span>
+                                    <span class="text-xs text-gray-500">${t.date || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                ${amount > 0 ? `<div class="transaction-amount ${amountClass}">₹${amount}</div>` : ''}
                             </div>
                         </div>
-                        <div class="text-right flex-shrink-0 ml-2">
-                            ${amount > 0 ? `<div class="transaction-amount ${amountClass}">₹${amount}</div>` : ''}
+                        <div class="mt-2 flex gap-2 flex-wrap">
+                            <button onclick="event.stopPropagation(); openUserTransactionEditModal('${user.username}', '${t.transaction_id}')" class="edit-btn text-[10px]">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="event.stopPropagation(); confirmDeleteUserTransaction('${user.username}', '${t.transaction_id}', '${title}')" class="delete-btn text-[10px]">
+                                <i class="fas fa-trash mr-1"></i>Delete
+                            </button>
                         </div>
                     </div>
-                    <div class="mt-2 flex gap-2 flex-wrap">
-                        <button onclick="event.stopPropagation(); openUserTransactionEditModal('${user.username}', '${t.transaction_id}')" class="edit-btn text-xs">
-                            <i class="fas fa-edit mr-1"></i>Edit
-                        </button>
-                        <button onclick="event.stopPropagation(); confirmDeleteUserTransaction('${user.username}', '${t.transaction_id}', '${title}')" class="delete-btn text-xs">
-                            <i class="fas fa-trash mr-1"></i>Delete
-                        </button>
+                `;
+            }).join('');
+
+            return `
+                <div class="user-card" id="user-card-${user.username}" onclick="toggleUserExpand('${user.username}')">
+                    <div class="user-card-inner">
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-name">${user.full_name || user.username}</div>
+                        <div class="user-username">@${user.username}</div>
+                        <div class="text-[10px] text-gray-500 mt-1">
+                            ${user.role === 'admin' ? '👑 Admin' : '👤 User'} · ${user.transactions.length} txns
+                        </div>
+                        <div class="mt-2 flex justify-center gap-2">
+                            <button onclick="event.stopPropagation(); openEditUserModal('${user.username}')" class="edit-btn text-[10px]">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                        </div>
+                        <div class="mt-1">
+                            <i class="fas fa-chevron-down expand-toggle-icon" id="expand-icon-${user.username}"></i>
+                        </div>
+                    </div>
+                    <div class="user-expand-content" id="expand-content-${user.username}">
+                        ${transactionItems || '<div class="text-center text-gray-500 py-3 text-sm">No transactions</div>'}
                     </div>
                 </div>
             `;
         }).join('');
 
-        return `
-            <div class="user-card" id="user-card-${user.username}" onclick="toggleUserExpand('${user.username}')">
-                <div class="user-card-inner">
-                    <div class="user-avatar">${initials}</div>
-                    <div class="user-name">${user.full_name || user.username}</div>
-                    <div class="user-username">@${user.username}</div>
-                    <div class="text-xs text-gray-500 mt-2">
-                        ${user.role === 'admin' ? '👑 Admin' : '👤 User'} · ${user.transactions.length} transactions
-                    </div>
-                    <div class="mt-3 flex justify-center gap-2">
-                        <button onclick="event.stopPropagation(); openEditUserModal('${user.username}')" class="edit-btn text-xs">
-                            <i class="fas fa-edit mr-1"></i>Edit
-                        </button>
-                    </div>
-                    <div class="mt-2">
-                        <i class="fas fa-chevron-down expand-toggle-icon" id="expand-icon-${user.username}"></i>
-                    </div>
-                </div>
-                <div class="user-expand-content" id="expand-content-${user.username}">
-                    ${transactionItems || '<div class="text-center text-gray-500 py-4">No transactions for this user</div>'}
-                </div>
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading admin users:', error);
+        container.innerHTML = `
+            <div class="text-center py-6 text-red-500 col-span-full text-sm">
+                <i class="fas fa-exclamation-circle text-xl mb-1"></i>
+                <p>Error loading users. Please refresh.</p>
             </div>
         `;
-    }).join('');
-
-    container.innerHTML = html;
+    }
 }
 
 function toggleUserExpand(username) {
@@ -874,7 +969,7 @@ function toggleUserExpand(username) {
 
     if (content.classList.contains('open')) {
         content.classList.remove('open');
-        card.classList.remove('expanded');
+        card?.classList.remove('expanded');
         if (icon) icon.classList.remove('rotated');
         return;
     }
@@ -889,37 +984,33 @@ function toggleUserExpand(username) {
     });
 
     content.classList.add('open');
-    card.classList.add('expanded');
+    if (card) card.classList.add('expanded');
     if (icon) icon.classList.add('rotated');
 }
 
 // =============================
-// 📊 Union Functions - FAST
+// 📊 Union Functions - Optimized
 // =============================
 async function loadUnionData() {
-    await Promise.all([
-        loadUnionTransactions(),
-        loadUnionSummary()
-    ]);
+    await Promise.all([loadUnionTransactions(), loadUnionSummary()]);
 }
+
+let unionSummaryCache = null;
+let unionSummaryCacheTime = 0;
 
 async function loadUnionSummary() {
     const container = document.getElementById('unionSummary');
-    
-    container.innerHTML = `
-        <div class="summary-card hard"><div class="label">Hard Money</div><div class="value">...</div></div>
-        <div class="summary-card soft"><div class="label">Soft Money</div><div class="value">...</div></div>
-        <div class="summary-card balance"><div class="label">Balance</div><div class="value">...</div></div>
-        <div class="summary-card toget"><div class="label">To Get</div><div class="value">...</div></div>
-        <div class="summary-card togive"><div class="label">To Give</div><div class="value">...</div></div>
-        <div class="summary-card difference"><div class="label">Difference</div><div class="value">...</div></div>
-    `;
-    
+
+    if (unionSummaryCache && Date.now() - unionSummaryCacheTime < 30000) {
+        container.innerHTML = unionSummaryCache;
+        return;
+    }
+
     try {
         const transactions = await api.getSheet('union');
-        
+
         if (!transactions || transactions.error || !Array.isArray(transactions)) {
-            container.innerHTML = `
+            const emptyHTML = `
                 <div class="summary-card hard"><div class="label">Hard Money</div><div class="value">₹0</div></div>
                 <div class="summary-card soft"><div class="label">Soft Money</div><div class="value">₹0</div></div>
                 <div class="summary-card balance"><div class="label">Balance</div><div class="value">₹0</div></div>
@@ -927,233 +1018,164 @@ async function loadUnionSummary() {
                 <div class="summary-card togive"><div class="label">To Give</div><div class="value">₹0</div></div>
                 <div class="summary-card difference"><div class="label">Difference</div><div class="value">₹0</div></div>
             `;
+            container.innerHTML = emptyHTML;
+            unionSummaryCache = emptyHTML;
+            unionSummaryCacheTime = Date.now();
             return;
         }
 
-        let hardTotal = 0;
-        let softTotal = 0;
-        let toGetTotal = 0;
-        let toGiveTotal = 0;
+        let hardTotal = 0, softTotal = 0, toGetTotal = 0, toGiveTotal = 0;
 
-        transactions.forEach(t => {
+        // Single pass for hard/soft
+        for (const t of transactions) {
             const amount = parseFloat(t.amount) || 0;
             const type = t.type || '';
             const status = t.status || '';
-            
+
             if (type === 'hard' && status === 'completed') {
                 hardTotal += amount;
             } else if (type === 'soft' && status === 'completed') {
                 softTotal += amount;
             }
-        });
+        }
 
-        transactions.forEach(t => {
+        // Second pass for to get/to give with completed logic
+        for (const t of transactions) {
             const amount = parseFloat(t.amount) || 0;
             const type = t.type || '';
             const status = t.status || '';
-            
+
             if (type === 'to get') {
-                if (status === 'pending') {
-                    toGetTotal += amount;
-                } else if (status === 'completed') {
-                    softTotal += amount;
-                }
+                if (status === 'pending') toGetTotal += amount;
+                else if (status === 'completed') softTotal += amount;
             } else if (type === 'to give') {
-                if (status === 'pending') {
-                    toGiveTotal += amount;
-                } else if (status === 'completed') {
-                    softTotal -= amount;
-                }
+                if (status === 'pending') toGiveTotal += amount;
+                else if (status === 'completed') softTotal -= amount;
             }
-        });
+        }
 
         const balance = hardTotal + softTotal;
         const difference = toGetTotal - toGiveTotal;
 
-        container.innerHTML = `
-            <div class="summary-card hard">
-                <div class="label">Hard Money</div>
-                <div class="value">₹${hardTotal.toFixed(2)}</div>
-            </div>
-            <div class="summary-card soft">
-                <div class="label">Soft Money</div>
-                <div class="value">₹${softTotal.toFixed(2)}</div>
-            </div>
-            <div class="summary-card balance">
-                <div class="label">Balance</div>
-                <div class="value">₹${balance.toFixed(2)}</div>
-            </div>
-            <div class="summary-card toget">
-                <div class="label">To Get</div>
-                <div class="value">₹${toGetTotal.toFixed(2)}</div>
-            </div>
-            <div class="summary-card togive">
-                <div class="label">To Give</div>
-                <div class="value">₹${toGiveTotal.toFixed(2)}</div>
-            </div>
-            <div class="summary-card difference">
-                <div class="label">Difference</div>
-                <div class="value">₹${difference.toFixed(2)}</div>
-            </div>
+        const html = `
+            <div class="summary-card hard"><div class="label">Hard Money</div><div class="value">₹${hardTotal.toFixed(2)}</div></div>
+            <div class="summary-card soft"><div class="label">Soft Money</div><div class="value">₹${softTotal.toFixed(2)}</div></div>
+            <div class="summary-card balance"><div class="label">Balance</div><div class="value">₹${balance.toFixed(2)}</div></div>
+            <div class="summary-card toget"><div class="label">To Get</div><div class="value">₹${toGetTotal.toFixed(2)}</div></div>
+            <div class="summary-card togive"><div class="label">To Give</div><div class="value">₹${toGiveTotal.toFixed(2)}</div></div>
+            <div class="summary-card difference"><div class="label">Difference</div><div class="value">₹${difference.toFixed(2)}</div></div>
         `;
+
+        container.innerHTML = html;
+        unionSummaryCache = html;
+        unionSummaryCacheTime = Date.now();
 
     } catch (error) {
         console.error('Error loading union summary:', error);
-        container.innerHTML = `
-            <div class="text-center text-red-500 col-span-full">Error loading summary</div>
-        `;
+        container.innerHTML = `<div class="text-center text-red-500 col-span-full text-sm">Error loading summary</div>`;
     }
 }
 
 async function loadUnionTransactions() {
     const container = document.getElementById('unionTransactionsList');
-    
-    if (CACHE.union && Array.isArray(CACHE.union) && CACHE.union.length > 0) {
-        renderUnionTransactions(container, CACHE.union);
-        api.getSheet('union', true).then(data => {
-            if (data && Array.isArray(data) && data.length > 0) {
-                CACHE.union = data;
-                renderUnionTransactions(container, data);
-            }
-        });
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-3xl text-emerald-500"></i>
-            <p class="mt-3 text-gray-500">Loading union transactions...</p>
-        </div>
-    `;
 
     try {
         const transactions = await api.getSheet('union');
-        CACHE.union = transactions;
-        renderUnionTransactions(container, transactions);
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-layer-group"></i>
+                    <h3>No Union Transactions</h3>
+                    <p>Click "Add Union Transaction" to create your first transaction.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const sortedTransactions = [...transactions].sort((a, b) => {
+            const dateA = new Date(a.date || 0);
+            const dateB = new Date(b.date || 0);
+            return dateB - dateA;
+        });
+
+        const html = sortedTransactions.map(transaction => {
+            const type = transaction.type || 'to get';
+            let modeClass = 'mode-get', modeIcon = 'fa-arrow-down';
+            if (type === 'hard') { modeClass = 'mode-hard'; modeIcon = 'fa-coins'; }
+            else if (type === 'soft') { modeClass = 'mode-soft'; modeIcon = 'fa-hand-holding-heart'; }
+            else if (type === 'to give') { modeClass = 'mode-give'; modeIcon = 'fa-arrow-up'; }
+
+            const amount = transaction.amount || '0';
+            const status = transaction.status || 'pending';
+            const statusClass = status === 'completed' ? 'status-completed' : 'status-pending';
+            const tid = transaction.transaction_id || transaction.id;
+
+            const dateStr = transaction.date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ?
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` :
+                '<span class="text-gray-400 text-xs">No bill</span>';
+
+            return `
+                <div class="transaction-card">
+                    <div class="transaction-header" onclick="toggleUnionDetails('${tid}')">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="mode-badge ${modeClass}">${type}</span>
+                            <span class="status-badge ${statusClass}">${status}</span>
+                            <span class="font-bold text-gray-700 text-sm">₹${amount}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="union-arrow-${tid}"></i>
+                        </div>
+                    </div>
+                    <div class="details-container" id="union-details-${tid}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div><div class="detail-label">ID</div><div class="detail-value">${tid}</div></div>
+                                <div><div class="detail-label">Type</div><div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span></div></div>
+                                <div><div class="detail-label">Amount</div><div class="detail-value font-bold">₹${amount}</div></div>
+                                <div><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div></div>
+                                <div><div class="detail-label">Date</div><div class="detail-value">${formattedDate}</div></div>
+                                <div><div class="detail-label">Updated</div><div class="detail-value">${transaction.updated_at || 'N/A'}</div></div>
+                                <div class="md:col-span-2"><div class="detail-label">Bill</div><div class="detail-value">${billLink}</div></div>
+                            </div>
+                            <div class="mt-3 flex gap-2 flex-wrap">
+                                <button onclick="event.stopPropagation(); openEditUnionModal('${tid}')" class="edit-btn">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button onclick="event.stopPropagation(); confirmDeleteTransaction('${tid}', '${transaction.title || 'Untitled'}', 'union')" class="delete-btn">
+                                    <i class="fas fa-trash mr-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
     } catch (error) {
         console.error('Error loading union transactions:', error);
         container.innerHTML = `
-            <div class="text-center py-8 text-red-500">
-                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-                <p>Error loading union transactions. Please try again.</p>
+            <div class="text-center py-6 text-red-500 text-sm">
+                <i class="fas fa-exclamation-circle text-xl mb-1"></i>
+                <p>Error loading union transactions. Please refresh.</p>
             </div>
         `;
     }
-}
-
-function renderUnionTransactions(container, transactions) {
-    if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-layer-group"></i>
-                <h3>No Union Transactions</h3>
-                <p>Click "Add Union Transaction" to create your first transaction.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const sortedTransactions = transactions.sort((a, b) => {
-        const dateA = new Date(a.date || 0);
-        const dateB = new Date(b.date || 0);
-        return dateB - dateA;
-    });
-
-    const html = sortedTransactions.map(transaction => {
-        const type = transaction.type || 'to get';
-        let modeClass = 'mode-get';
-        let modeIcon = 'fa-arrow-down';
-        
-        if (type === 'hard') { modeClass = 'mode-hard'; modeIcon = 'fa-coins'; }
-        else if (type === 'soft') { modeClass = 'mode-soft'; modeIcon = 'fa-hand-holding-heart'; }
-        else if (type === 'to give') { modeClass = 'mode-give'; modeIcon = 'fa-arrow-up'; }
-        
-        const amount = transaction.amount || '0';
-        const status = transaction.status || 'pending';
-        const statusClass = status === 'completed' ? 'status-completed' : 'status-pending';
-        
-        const dateStr = transaction.date || 'N/A';
-        const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }) : 'N/A';
-
-        const billLink = transaction.bill_url ? 
-            `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
-            '<span class="text-gray-400 text-sm">No bill uploaded</span>';
-
-        const tid = transaction.transaction_id || transaction.id;
-
-        return `
-            <div class="transaction-card">
-                <div class="transaction-header" onclick="toggleUnionDetails('${tid}')">
-                    <div class="flex items-center min-w-0 flex-1">
-                        <div class="transaction-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                            <i class="fas ${modeIcon}"></i>
-                        </div>
-                        <div class="transaction-info min-w-0 flex-1">
-                            <h3>${transaction.title || 'Untitled'}</h3>
-                            <p>${formattedDate}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3 flex-shrink-0">
-                        <span class="mode-badge ${modeClass}">${type}</span>
-                        <span class="status-badge ${statusClass}">${status}</span>
-                        <span class="font-bold text-gray-700">₹${amount}</span>
-                        <i class="fas fa-chevron-down expand-arrow" id="union-arrow-${tid}"></i>
-                    </div>
-                </div>
-                
-                <div class="details-container" id="union-details-${tid}">
-                    <div class="detail-item">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <div class="detail-label">Transaction ID</div>
-                                <div class="detail-value">${tid}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Type</div>
-                                <div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span></div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Amount</div>
-                                <div class="detail-value font-bold">₹${amount}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Status</div>
-                                <div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Date & Time</div>
-                                <div class="detail-value">${formattedDate}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Updated At</div>
-                                <div class="detail-value">${transaction.updated_at || 'N/A'}</div>
-                            </div>
-                            <div class="md:col-span-2">
-                                <div class="detail-label">Bill</div>
-                                <div class="detail-value">${billLink}</div>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex gap-2 flex-wrap">
-                            <button onclick="event.stopPropagation(); openEditUnionModal('${tid}')" class="edit-btn">
-                                <i class="fas fa-edit mr-1"></i>Edit
-                            </button>
-                            <button onclick="event.stopPropagation(); confirmDeleteTransaction('${tid}', '${transaction.title || 'Untitled'}', 'union')" class="delete-btn">
-                                <i class="fas fa-trash mr-1"></i>Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = html;
 }
 
 function toggleUnionDetails(id) {
@@ -1179,149 +1201,100 @@ function toggleUnionDetails(id) {
 }
 
 // =============================
-// 👤 User Union Functions (View Only) - FAST
+// 👤 User Union Functions (View Only)
 // =============================
 async function loadUserUnionTransactions() {
     const container = document.getElementById('userUnionTransactionsList');
-    
-    if (CACHE.union && Array.isArray(CACHE.union) && CACHE.union.length > 0) {
-        renderUserUnionTransactions(container, CACHE.union);
-        api.getSheet('union', true).then(data => {
-            if (data && Array.isArray(data) && data.length > 0) {
-                CACHE.union = data;
-                renderUserUnionTransactions(container, data);
-            }
-        });
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-3xl text-emerald-500"></i>
-            <p class="mt-3 text-gray-500">Loading union transactions...</p>
-        </div>
-    `;
 
     try {
         const transactions = await api.getSheet('union');
-        CACHE.union = transactions;
-        renderUserUnionTransactions(container, transactions);
+
+        if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-layer-group"></i>
+                    <h3>No Union Transactions</h3>
+                    <p>No union transactions available.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const sortedTransactions = [...transactions].sort((a, b) => {
+            const dateA = new Date(a.date || 0);
+            const dateB = new Date(b.date || 0);
+            return dateB - dateA;
+        });
+
+        const html = sortedTransactions.map(transaction => {
+            const type = transaction.type || 'to get';
+            let modeClass = 'mode-get', modeIcon = 'fa-arrow-down';
+            if (type === 'hard') { modeClass = 'mode-hard'; modeIcon = 'fa-coins'; }
+            else if (type === 'soft') { modeClass = 'mode-soft'; modeIcon = 'fa-hand-holding-heart'; }
+            else if (type === 'to give') { modeClass = 'mode-give'; modeIcon = 'fa-arrow-up'; }
+
+            const amount = transaction.amount || '0';
+            const status = transaction.status || 'pending';
+            const statusClass = status === 'completed' ? 'status-completed' : 'status-pending';
+            const tid = transaction.transaction_id || transaction.id;
+
+            const dateStr = transaction.date || 'N/A';
+            const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }) : 'N/A';
+
+            const billLink = transaction.bill_url ?
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` :
+                '<span class="text-gray-400 text-xs">No bill</span>';
+
+            return `
+                <div class="transaction-card" onclick="toggleUserUnionDetails('${tid}')">
+                    <div class="transaction-header">
+                        <div class="flex items-center min-w-0 flex-1">
+                            <div class="transaction-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                <i class="fas ${modeIcon}"></i>
+                            </div>
+                            <div class="transaction-info min-w-0 flex-1">
+                                <h3>${transaction.title || 'Untitled'}</h3>
+                                <p>${formattedDate}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="mode-badge ${modeClass}">${type}</span>
+                            <span class="status-badge ${statusClass}">${status}</span>
+                            <span class="font-bold text-gray-700 text-sm">₹${amount}</span>
+                            <i class="fas fa-chevron-down expand-arrow" id="user-union-arrow-${tid}"></i>
+                        </div>
+                    </div>
+                    <div class="details-container" id="user-union-details-${tid}">
+                        <div class="detail-item">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div><div class="detail-label">ID</div><div class="detail-value">${tid}</div></div>
+                                <div><div class="detail-label">Type</div><div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span></div></div>
+                                <div><div class="detail-label">Amount</div><div class="detail-value font-bold">₹${amount}</div></div>
+                                <div><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div></div>
+                                <div><div class="detail-label">Date</div><div class="detail-value">${formattedDate}</div></div>
+                                <div><div class="detail-label">Updated</div><div class="detail-value">${transaction.updated_at || 'N/A'}</div></div>
+                                <div class="md:col-span-2"><div class="detail-label">Bill</div><div class="detail-value">${billLink}</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+
     } catch (error) {
         console.error('Error loading user union transactions:', error);
         container.innerHTML = `
-            <div class="text-center py-8 text-red-500">
-                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-                <p>Error loading union transactions. Please try again.</p>
+            <div class="text-center py-6 text-red-500 text-sm">
+                <i class="fas fa-exclamation-circle text-xl mb-1"></i>
+                <p>Error loading union transactions. Please refresh.</p>
             </div>
         `;
     }
-}
-
-function renderUserUnionTransactions(container, transactions) {
-    if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-layer-group"></i>
-                <h3>No Union Transactions</h3>
-                <p>No union transactions available.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const sortedTransactions = transactions.sort((a, b) => {
-        const dateA = new Date(a.date || 0);
-        const dateB = new Date(b.date || 0);
-        return dateB - dateA;
-    });
-
-    const html = sortedTransactions.map(transaction => {
-        const type = transaction.type || 'to get';
-        let modeClass = 'mode-get';
-        let modeIcon = 'fa-arrow-down';
-        
-        if (type === 'hard') { modeClass = 'mode-hard'; modeIcon = 'fa-coins'; }
-        else if (type === 'soft') { modeClass = 'mode-soft'; modeIcon = 'fa-hand-holding-heart'; }
-        else if (type === 'to give') { modeClass = 'mode-give'; modeIcon = 'fa-arrow-up'; }
-        
-        const amount = transaction.amount || '0';
-        const status = transaction.status || 'pending';
-        const statusClass = status === 'completed' ? 'status-completed' : 'status-pending';
-        
-        const dateStr = transaction.date || 'N/A';
-        const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }) : 'N/A';
-
-        const billLink = transaction.bill_url ? 
-            `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
-            '<span class="text-gray-400 text-sm">No bill uploaded</span>';
-
-        const tid = transaction.transaction_id || transaction.id;
-
-        return `
-            <div class="transaction-card" onclick="toggleUserUnionDetails('${tid}')">
-                <div class="transaction-header">
-                    <div class="flex items-center min-w-0 flex-1">
-                        <div class="transaction-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                            <i class="fas ${modeIcon}"></i>
-                        </div>
-                        <div class="transaction-info min-w-0 flex-1">
-                            <h3>${transaction.title || 'Untitled'}</h3>
-                            <p>${formattedDate}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3 flex-shrink-0">
-                        <span class="mode-badge ${modeClass}">${type}</span>
-                        <span class="status-badge ${statusClass}">${status}</span>
-                        <span class="font-bold text-gray-700">₹${amount}</span>
-                        <i class="fas fa-chevron-down expand-arrow" id="user-union-arrow-${tid}"></i>
-                    </div>
-                </div>
-                
-                <div class="details-container" id="user-union-details-${tid}">
-                    <div class="detail-item">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <div class="detail-label">Transaction ID</div>
-                                <div class="detail-value">${tid}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Type</div>
-                                <div class="detail-value"><span class="mode-badge ${modeClass}">${type}</span></div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Amount</div>
-                                <div class="detail-value font-bold">₹${amount}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Status</div>
-                                <div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Date & Time</div>
-                                <div class="detail-value">${formattedDate}</div>
-                            </div>
-                            <div>
-                                <div class="detail-label">Updated At</div>
-                                <div class="detail-value">${transaction.updated_at || 'N/A'}</div>
-                            </div>
-                            <div class="md:col-span-2">
-                                <div class="detail-label">Bill</div>
-                                <div class="detail-value">${billLink}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = html;
 }
 
 function toggleUserUnionDetails(id) {
@@ -1347,7 +1320,7 @@ function toggleUserUnionDetails(id) {
 }
 
 // =============================
-// ➕ Add Transaction Functions - FAST
+// ➕ Add Transaction Functions
 // =============================
 async function openAddTransactionModal() {
     const modal = document.getElementById('addTransactionModal');
@@ -1377,17 +1350,15 @@ async function getNextTransactionId() {
             return 'TRN001';
         }
 
-        const ids = transactions
-            .map(t => t.transaction_id || t.id)
-            .filter(id => id && id.startsWith('TRN'))
-            .map(id => {
+        let maxNum = 0;
+        for (const t of transactions) {
+            const id = t.transaction_id || t.id;
+            if (id && id.startsWith('TRN')) {
                 const num = parseInt(id.substring(3));
-                return isNaN(num) ? 0 : num;
-            });
-
-        if (ids.length === 0) return 'TRN001';
-        const nextNum = Math.max(...ids) + 1;
-        return `TRN${String(nextNum).padStart(3, '0')}`;
+                if (!isNaN(num) && num > maxNum) maxNum = num;
+            }
+        }
+        return `TRN${String(maxNum + 1).padStart(3, '0')}`;
     } catch (error) {
         console.error('Error generating transaction ID:', error);
         return 'TRN001';
@@ -1426,7 +1397,6 @@ async function submitAddTransaction(event) {
             }
 
             const uploadResult = await api.uploadFile('admin', transactionId, file);
-
             if (uploadResult && uploadResult.success) {
                 billUrl = uploadResult.fileUrl || '';
             } else {
@@ -1435,16 +1405,17 @@ async function submitAddTransaction(event) {
             }
         }
 
-        const result = await api.addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date);
+        const result = await api.addRow('transaction_master', [transactionId, title, mode, amount, billUrl, date]);
 
-        if (result && result.success) {
+        if (result && (result.success || result.message?.includes('Success'))) {
+            await api.addTransactionToAllUsers(transactionId, title, mode, amount, billUrl, date);
+
             showAddTransactionSuccess('Transaction added successfully!');
-            // Clear cache and refresh
-            CACHE.transactions = null;
             setTimeout(() => {
                 closeAddTransactionModal();
+                api.clearCache('transaction_master');
                 loadAdminTransactions();
-                loadAdminUsers();
+                loadAdminUsersSummary();
             }, 1000);
         } else {
             throw new Error(result?.error || 'Failed to add transaction');
@@ -1474,7 +1445,7 @@ function showAddTransactionSuccess(message) {
 }
 
 // =============================
-// ✏️ Edit Transaction Functions - FAST
+// ✏️ Edit Transaction Functions
 // =============================
 async function openEditTransactionModal(transactionId) {
     const modal = document.getElementById('editTransactionModal');
@@ -1509,13 +1480,13 @@ async function openEditTransactionModal(transactionId) {
         const currentBillDiv = document.getElementById('editCurrentBill');
         if (transaction.bill_url) {
             currentBillDiv.innerHTML = `
-                <p class="text-sm text-gray-600">
+                <p class="text-xs text-gray-600">
                     <i class="fas fa-file-image mr-1 text-blue-500"></i>
-                    Current bill: <a href="${transaction.bill_url}" target="_blank" class="bill-link">View Bill</a>
+                    Current: <a href="${transaction.bill_url}" target="_blank" class="bill-link">View Bill</a>
                 </p>
             `;
         } else {
-            currentBillDiv.innerHTML = '<p class="text-sm text-gray-400">No bill currently uploaded</p>';
+            currentBillDiv.innerHTML = '<p class="text-xs text-gray-400">No bill currently uploaded</p>';
         }
 
         modal.classList.remove('hidden');
@@ -1562,7 +1533,6 @@ async function submitEditTransaction(event) {
             }
 
             const uploadResult = await api.uploadFile('admin', transactionId, file);
-
             if (uploadResult && uploadResult.success) {
                 billUrl = uploadResult.fileUrl || '';
             } else {
@@ -1575,11 +1545,11 @@ async function submitEditTransaction(event) {
 
         if (result && result.success) {
             showEditTransactionSuccess('Transaction updated successfully!');
-            CACHE.transactions = null;
             setTimeout(() => {
                 closeEditTransactionModal();
+                api.clearCache('transaction_master');
                 loadAdminTransactions();
-                loadAdminUsers();
+                loadAdminUsersSummary();
             }, 1000);
         } else {
             throw new Error(result?.error || 'Failed to update transaction');
@@ -1609,15 +1579,15 @@ function showEditTransactionSuccess(message) {
 }
 
 // =============================
-// 🆕 Union Modal Functions - FAST
+// 🆕 Union Modal Functions
 // =============================
 async function openUnionModal() {
     const modal = document.getElementById('unionModal');
     const form = document.getElementById('unionForm');
     form.reset();
+    form.dataset.editId = '';
     document.getElementById('unionError').classList.add('hidden');
     document.getElementById('unionSuccess').classList.add('hidden');
-    delete form.dataset.editId;
 
     const nextId = await getNextUnionId();
     document.getElementById('unionTransactionId').value = nextId;
@@ -1626,7 +1596,6 @@ async function openUnionModal() {
     const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
     document.getElementById('unionDate').value = localDateTime.toISOString().slice(0, 16);
 
-    // Reset button
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Transaction';
 
@@ -1644,17 +1613,15 @@ async function getNextUnionId() {
             return 'UNION_001';
         }
 
-        const ids = transactions
-            .map(t => t.transaction_id || t.id)
-            .filter(id => id && id.startsWith('UNION_'))
-            .map(id => {
+        let maxNum = 0;
+        for (const t of transactions) {
+            const id = t.transaction_id || t.id;
+            if (id && id.startsWith('UNION_')) {
                 const num = parseInt(id.substring(6));
-                return isNaN(num) ? 0 : num;
-            });
-
-        if (ids.length === 0) return 'UNION_001';
-        const nextNum = Math.max(...ids) + 1;
-        return `UNION_${String(nextNum).padStart(3, '0')}`;
+                if (!isNaN(num) && num > maxNum) maxNum = num;
+            }
+        }
+        return `UNION_${String(maxNum + 1).padStart(3, '0')}`;
     } catch (error) {
         console.error('Error generating union ID:', error);
         return 'UNION_001';
@@ -1696,7 +1663,6 @@ async function submitUnionTransaction(event) {
             }
 
             const uploadResult = await api.uploadFile('admin', transactionId, file);
-
             if (uploadResult && uploadResult.success) {
                 billUrl = uploadResult.fileUrl || '';
             } else {
@@ -1718,13 +1684,13 @@ async function submitUnionTransaction(event) {
         }
 
         if (result && result.success) {
-            showUnionSuccess((editId ? 'Union transaction updated' : 'Union transaction added') + ' successfully!');
-            CACHE.union = null;
+            showUnionSuccess((editId ? 'Updated' : 'Added') + ' successfully!');
             setTimeout(() => {
                 closeUnionModal();
                 delete form.dataset.editId;
                 const btn = document.querySelector('#unionForm button[type="submit"]');
                 btn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Transaction';
+                api.clearCache('union');
                 loadUnionData();
             }, 1000);
         } else {
@@ -1755,7 +1721,7 @@ function showUnionSuccess(message) {
 }
 
 // =============================
-// ✏️ Edit Union Functions - FAST
+// ✏️ Edit Union Functions
 // =============================
 async function openEditUnionModal(transactionId) {
     const modal = document.getElementById('unionModal');
@@ -1799,18 +1765,18 @@ async function openEditUnionModal(transactionId) {
 }
 
 // =============================
-// 🗑️ Delete Functions with Confirmation
+// 🗑️ Delete Functions
 // =============================
 function confirmDeleteTransaction(transactionId, title, sheet) {
     deleteTarget = { transactionId, title, sheet };
-    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${title}"? This action cannot be undone.`;
+    document.getElementById('deleteConfirmMessage').textContent = `Delete "${title}"? This cannot be undone.`;
     document.getElementById('deleteConfirmDialog').classList.remove('hidden');
     document.getElementById('confirmDeleteBtn').onclick = executeDelete;
 }
 
 function confirmDeleteUserTransaction(username, transactionId, title) {
     deleteTarget = { username, transactionId, title, sheet: 'user_transaction' };
-    document.getElementById('deleteConfirmMessage').textContent = `Are you sure you want to delete "${title}" for user ${username}? This action cannot be undone.`;
+    document.getElementById('deleteConfirmMessage').textContent = `Delete "${title}" for ${username}? Cannot be undone.`;
     document.getElementById('deleteConfirmDialog').classList.remove('hidden');
     document.getElementById('confirmDeleteBtn').onclick = executeDelete;
 }
@@ -1832,30 +1798,28 @@ async function executeDelete() {
         if (deleteTarget.sheet === 'union') {
             result = await api.deleteUnionTransaction(deleteTarget.transactionId);
             if (result && result.success) {
-                showNotification('Union transaction deleted successfully!', 'success');
-                CACHE.union = null;
+                showNotification('Union transaction deleted!', 'success');
                 await loadUnionData();
             } else {
-                throw new Error(result?.error || 'Failed to delete union transaction');
+                throw new Error(result?.error || 'Failed to delete');
             }
         } else if (deleteTarget.sheet === 'transaction_master') {
             result = await api.deleteTransaction(deleteTarget.transactionId);
             if (result && result.success) {
-                showNotification('Transaction deleted successfully!', 'success');
-                CACHE.transactions = null;
+                showNotification('Transaction deleted!', 'success');
+                api.clearCache('transaction_master');
                 await loadAdminTransactions();
-                await loadAdminUsers();
+                await loadAdminUsersSummary();
             } else {
-                throw new Error(result?.error || 'Failed to delete transaction');
+                throw new Error(result?.error || 'Failed to delete');
             }
         } else if (deleteTarget.sheet === 'user_transaction') {
             result = await api.deleteUserTransaction(deleteTarget.username, deleteTarget.transactionId);
             if (result && result.success) {
-                showNotification('User transaction deleted successfully!', 'success');
-                CACHE.userTransactions = {};
+                showNotification('User transaction deleted!', 'success');
                 await loadAdminUsers();
             } else {
-                throw new Error(result?.error || 'Failed to delete user transaction');
+                throw new Error(result?.error || 'Failed to delete');
             }
         }
 
@@ -1870,30 +1834,13 @@ async function executeDelete() {
 }
 
 // =============================
-// 👤 User Functions - FAST
+// 👤 User Functions - Optimized
 // =============================
 async function loadUserTransactions() {
     const container = document.getElementById('userTransactionsList');
-    
-    container.innerHTML = `
-        <div class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-3xl text-cyan-500"></i>
-            <p class="mt-3 text-gray-500">Loading transactions...</p>
-        </div>
-    `;
 
     try {
-        const [transactions, userTransactions] = await Promise.all([
-            api.getSheet('transaction_master'),
-            api.getUserTransactions(currentUser.username)
-        ]);
-
-        const userTransactionMap = {};
-        if (userTransactions && Array.isArray(userTransactions)) {
-            userTransactions.forEach(t => {
-                userTransactionMap[t.transaction_id] = t;
-            });
-        }
+        const transactions = await api.getSheet('transaction_master');
 
         if (!transactions || transactions.error || !Array.isArray(transactions) || transactions.length === 0) {
             container.innerHTML = `
@@ -1906,7 +1853,15 @@ async function loadUserTransactions() {
             return;
         }
 
-        const sortedTransactions = transactions.sort((a, b) => {
+        const userTransactions = await api.getUserTransactions(currentUser.username);
+        const userTransactionMap = {};
+        if (userTransactions && Array.isArray(userTransactions)) {
+            userTransactions.forEach(t => {
+                userTransactionMap[t.transaction_id] = t;
+            });
+        }
+
+        const sortedTransactions = [...transactions].sort((a, b) => {
             const dateA = new Date(a.date || a.transaction_date || 0);
             const dateB = new Date(b.date || b.transaction_date || 0);
             return dateB - dateA;
@@ -1917,29 +1872,25 @@ async function loadUserTransactions() {
             const userTxn = userTransactionMap[tid];
             const status = userTxn?.status || 'pending';
             const amount = userTxn?.amount || transaction.amount || '0';
-            
+
             const adminMode = transaction.mode || 'to get';
-            const userMode = adminMode === 'to give' ? 'to get' : 
+            const userMode = adminMode === 'to give' ? 'to get' :
                             adminMode === 'to get' ? 'to give' : adminMode;
-            
+
             const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
             const modeIcon = userMode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
-            
-            const statusClass = status === 'completed' ? 'status-completed' : 
+            const statusClass = status === 'completed' ? 'status-completed' :
                                status === 'cancelled' ? 'status-cancelled' : 'status-pending';
-            
+
             const dateStr = transaction.date || transaction.transaction_date || 'N/A';
             const formattedDate = dateStr !== 'N/A' ? new Date(dateStr).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
             }) : 'N/A';
 
-            const billLink = transaction.bill_url ? 
-                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` : 
-                '<span class="text-gray-400 text-sm">No bill uploaded</span>';
+            const billLink = transaction.bill_url ?
+                `<a href="${transaction.bill_url}" target="_blank" class="bill-link"><i class="fas fa-file-image mr-1"></i>View Bill</a>` :
+                '<span class="text-gray-400 text-xs">No bill</span>';
 
             return `
                 <div class="transaction-card" onclick="toggleUserTransactionDetails('${tid}')">
@@ -1953,46 +1904,24 @@ async function loadUserTransactions() {
                                 <p>${formattedDate}</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-3 flex-shrink-0">
+                        <div class="flex items-center space-x-2 flex-shrink-0">
                             ${status !== 'pending' ? `<span class="status-badge ${statusClass}">${status}</span>` : ''}
                             ${amount > 0 ? `<span class="transaction-amount ${userMode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
                             <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
                         </div>
                     </div>
-                    
                     <div class="details-container" id="user-details-${tid}">
                         <div class="detail-item">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <div class="detail-label">Transaction ID</div>
-                                    <div class="detail-value">${tid}</div>
-                                </div>
-                                <div>
-                                    <div class="detail-label">Mode</div>
-                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${userMode}</span></div>
-                                </div>
-                                <div>
-                                    <div class="detail-label">Amount</div>
-                                    <div class="detail-value font-bold">₹${amount}</div>
-                                </div>
-                                <div>
-                                    <div class="detail-label">Date & Time</div>
-                                    <div class="detail-value">${formattedDate}</div>
-                                </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div><div class="detail-label">ID</div><div class="detail-value">${tid}</div></div>
+                                <div><div class="detail-label">Mode</div><div class="detail-value"><span class="mode-badge ${modeClass}">${userMode}</span></div></div>
+                                <div><div class="detail-label">Amount</div><div class="detail-value font-bold">₹${amount}</div></div>
+                                <div><div class="detail-label">Date</div><div class="detail-value">${formattedDate}</div></div>
                                 ${status !== 'pending' ? `
-                                    <div>
-                                        <div class="detail-label">Status</div>
-                                        <div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div>
-                                    </div>
-                                    <div>
-                                        <div class="detail-label">Updated</div>
-                                        <div class="detail-value">${userTxn?.date || 'N/A'}</div>
-                                    </div>
+                                    <div><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}">${status}</span></div></div>
+                                    <div><div class="detail-label">Updated</div><div class="detail-value">${userTxn?.date || 'N/A'}</div></div>
                                 ` : ''}
-                                <div class="md:col-span-2">
-                                    <div class="detail-label">Bill</div>
-                                    <div class="detail-value">${billLink}</div>
-                                </div>
+                                <div class="md:col-span-2"><div class="detail-label">Bill</div><div class="detail-value">${billLink}</div></div>
                             </div>
                         </div>
                     </div>
@@ -2005,9 +1934,9 @@ async function loadUserTransactions() {
     } catch (error) {
         console.error('Error loading user transactions:', error);
         container.innerHTML = `
-            <div class="text-center py-8 text-red-500">
-                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-                <p>Error loading transactions. Please try again.</p>
+            <div class="text-center py-6 text-red-500 text-sm">
+                <i class="fas fa-exclamation-circle text-xl mb-1"></i>
+                <p>Error loading transactions. Please refresh.</p>
             </div>
         `;
     }
@@ -2036,7 +1965,7 @@ function toggleUserTransactionDetails(id) {
 }
 
 // =============================
-// ✏️ User Transaction Edit (Admin) - FAST
+// ✏️ User Transaction Edit (Admin)
 // =============================
 async function openUserTransactionEditModal(username, transactionId) {
     const modal = document.getElementById('userTransactionEditModal');
@@ -2050,14 +1979,14 @@ async function openUserTransactionEditModal(username, transactionId) {
             api.getUserTransactions(username),
             api.getSheet('transaction_master')
         ]);
-        
-        const userTxn = userTransactions.find(t => t.transaction_id === transactionId);
+
+        const userTxn = userTransactions?.find(t => t.transaction_id === transactionId);
         if (!userTxn) {
             alert('User transaction not found!');
             return;
         }
 
-        const masterTxn = transactions.find(t => (t.transaction_id || t.id) === transactionId);
+        const masterTxn = transactions?.find(t => (t.transaction_id || t.id) === transactionId);
 
         document.getElementById('userEditUsername').value = username;
         document.getElementById('userEditTransactionTitle').value = masterTxn?.title || 'Unknown';
@@ -2113,14 +2042,13 @@ async function submitUserTransactionEdit(event) {
         const result = await api.updateUserTransaction(username, transactionId, mode, status, amount, date);
 
         if (result && result.success) {
-            showUserEditSuccess('User transaction updated successfully!');
-            CACHE.userTransactions = {};
+            showUserEditSuccess('User transaction updated!');
             setTimeout(() => {
                 closeUserTransactionEditModal();
                 loadAdminUsers();
             }, 1000);
         } else {
-            throw new Error(result?.error || 'Failed to update user transaction');
+            throw new Error(result?.error || 'Failed to update');
         }
 
     } catch (error) {
@@ -2147,7 +2075,7 @@ function showUserEditSuccess(message) {
 }
 
 // =============================
-// 👤 Add User Functions - FAST
+// 👤 Add User Functions
 // =============================
 function openAddUserModal() {
     document.getElementById('addUserModal').classList.remove('hidden');
@@ -2185,9 +2113,9 @@ async function submitAddUser(event) {
         if (result && result.success) {
             showAddUserSuccess('User added successfully!');
             document.getElementById('addUserForm').reset();
-            CACHE.users = null;
             setTimeout(() => {
                 closeAddUserModal();
+                api.clearCache('user_credentials');
                 loadAdminUsers();
             }, 1000);
         } else {
@@ -2218,7 +2146,7 @@ function showAddUserSuccess(message) {
 }
 
 // =============================
-// ✏️ Edit User Functions - FAST
+// ✏️ Edit User Functions
 // =============================
 async function openEditUserModal(username) {
     const modal = document.getElementById('editUserModal');
@@ -2229,7 +2157,7 @@ async function openEditUserModal(username) {
 
     try {
         const users = await api.getSheet('user_credentials');
-        const user = users.find(u => u.username === username);
+        const user = users?.find(u => u.username === username);
 
         if (!user) {
             alert('User not found!');
@@ -2275,8 +2203,7 @@ async function submitEditUser(event) {
 
         if (result && result.success) {
             showEditUserSuccess('User updated successfully!');
-            CACHE.users = null;
-            
+
             if (username === currentUser.username && newPassword) {
                 showNotification('Password changed. Please login again.', 'warning', 3000);
                 setTimeout(() => {
@@ -2286,6 +2213,7 @@ async function submitEditUser(event) {
             } else {
                 setTimeout(() => {
                     closeEditUserModal();
+                    api.clearCache('user_credentials');
                     loadAdminUsers();
                 }, 1000);
             }
@@ -2317,7 +2245,7 @@ function showEditUserSuccess(message) {
 }
 
 // =============================
-// 🔐 Change Password Functions - FAST
+// 🔐 Change Password Functions
 // =============================
 function openChangePasswordModal() {
     document.getElementById('profileMenu').classList.add('hidden');
@@ -2351,7 +2279,7 @@ async function changePassword(event) {
     }
 
     if (newPassword.length < 6) {
-        showChangePasswordError('New password must be at least 6 characters long');
+        showChangePasswordError('New password must be at least 6 characters');
         return;
     }
 
@@ -2361,26 +2289,24 @@ async function changePassword(event) {
     }
 
     if (newPassword === currentPassword) {
-        showChangePasswordError('New password must be different from current password');
+        showChangePasswordError('New password must be different');
         return;
     }
 
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Changing Password...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Changing...';
     submitBtn.disabled = true;
 
     try {
-        const users = await api.getSheet("user_credentials", true);
-
+        const users = await api.getSheet("user_credentials", false);
         if (!users || users.error || !Array.isArray(users)) {
             throw new Error('Failed to fetch user data');
         }
 
-        const user = users.find(u => {
-            if (!u.username || !u.password) return false;
-            return String(u.username).toLowerCase().trim() === String(currentUser.username).toLowerCase().trim() &&
-                   String(u.password).trim() === String(currentPassword).trim();
-        });
+        const user = users.find(u =>
+            String(u.username).toLowerCase().trim() === String(currentUser.username).toLowerCase().trim() &&
+            String(u.password).trim() === String(currentPassword).trim()
+        );
 
         if (!user) {
             throw new Error('Current password is incorrect');
@@ -2389,7 +2315,7 @@ async function changePassword(event) {
         const updateResult = await api.updatePassword(currentUser.username, newPassword);
 
         if (updateResult && updateResult.success) {
-            showChangePasswordSuccess('Password changed successfully! You will be logged out in 3 seconds.');
+            showChangePasswordSuccess('Password changed! You will be logged out in 3 seconds.');
             document.getElementById('changePasswordForm').reset();
             setTimeout(() => {
                 closeChangePasswordModal();
@@ -2431,7 +2357,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        window.login();
+        login();
     });
 
     document.getElementById('addTransactionForm').addEventListener('submit', submitAddTransaction);
@@ -2442,7 +2368,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('changePasswordForm').addEventListener('submit', changePassword);
     document.getElementById('unionForm').addEventListener('submit', submitUnionTransaction);
 
-    // Close modals on overlay click
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -2451,15 +2376,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Close confirm dialog on overlay click
     document.getElementById('deleteConfirmDialog').addEventListener('click', function(e) {
         if (e.target === this) {
             closeDeleteConfirm();
         }
     });
+
+    // Preload on idle
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => preloadCriticalData());
+    }
 });
 
-// Restore session on load (fallback)
+// Restore session on load
 (function() {
     const saved = sessionStorage.getItem('transaction_session');
     if (saved && !currentUser) {
@@ -2485,5 +2414,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })();
 
-console.log('%c🚀 Transaction Manager - FAST & FURIOUS!', 'color: #4f46e5; font-size: 18px; font-weight: bold;');
-console.log('%c⚡ Optimized for speed with aggressive caching and parallel requests', 'color: #22c55e; font-size: 12px;');
+// RequestIdleCallback polyfill for older browsers
+if (!('requestIdleCallback' in window)) {
+    window.requestIdleCallback = function(cb) {
+        return setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), 1);
+    };
+    window.cancelIdleCallback = function(id) { clearTimeout(id); };
+}
+
+console.log('%c⚡ Transaction Manager (Optimized) ⚡', 'color: #4f46e5; font-size: 14px; font-weight: bold;');
