@@ -18,7 +18,7 @@ let dataCache = {
 // =============================
 class GoogleSheetsAPI {
     constructor() {
-        this.apiUrl = "https://script.google.com/macros/s/AKfycbxLJWIHdM6SvlY80p-Zi80ZRBY360I0PhbjVGNSY4vxAzf9ev_j-2Qax0sMcRSbM3M-pQ/exec";
+        this.apiUrl = "https://script.google.com/macros/s/AKfycbzM3fIkchCl9xHXZ-peu__s8XoSL4e6AsChywXI-3CM1MRJAkAjnzBQfQ7AhOlBPIb-8Q/exec";
         this.cache = new Map();
         this.localCache = this.initLocalCache();
         this.cacheTimeout = 30 * 1000;
@@ -531,70 +531,6 @@ class GoogleSheetsAPI {
             return { error: error.message };
         }
     }
-
-    // =============================
-    // 📊 Get User Summary
-    // =============================
-
-    async getUserSummary() {
-        try {
-            const users = await this.getSheet('user_credentials');
-            if (!users || users.error || !Array.isArray(users)) {
-                return { givePending: 0, giveCompleted: 0, getPending: 0, getCompleted: 0 };
-            }
-
-            let givePending = 0;
-            let giveCompleted = 0;
-            let getPending = 0;
-            let getCompleted = 0;
-
-            // Get all transaction masters
-            const transactions = await this.getSheet('transaction_master');
-            const transactionMap = {};
-            if (transactions && Array.isArray(transactions)) {
-                transactions.forEach(t => {
-                    transactionMap[t.transaction_id || t.id] = t;
-                });
-            }
-
-            // Process each user's transactions
-            for (const user of users) {
-                const username = user.username;
-                if (!username) continue;
-
-                const userTransactions = await this.getUserTransactions(username);
-                if (!userTransactions || !Array.isArray(userTransactions)) continue;
-
-                for (const ut of userTransactions) {
-                    const master = transactionMap[ut.transaction_id];
-                    if (!master) continue;
-
-                    const mode = master.mode || ut.mode || '';
-                    const status = ut.status || 'pending';
-                    const amount = parseFloat(ut.amount) || 0;
-
-                    if (mode === 'to give') {
-                        if (status === 'pending') {
-                            givePending += amount;
-                        } else if (status === 'completed') {
-                            giveCompleted += amount;
-                        }
-                    } else if (mode === 'to get') {
-                        if (status === 'pending') {
-                            getPending += amount;
-                        } else if (status === 'completed') {
-                            getCompleted += amount;
-                        }
-                    }
-                }
-            }
-
-            return { givePending, giveCompleted, getPending, getCompleted };
-        } catch (error) {
-            console.error('Error getting user summary:', error);
-            return { givePending: 0, giveCompleted: 0, getPending: 0, getCompleted: 0 };
-        }
-    }
 }
 
 const api = new GoogleSheetsAPI();
@@ -873,45 +809,116 @@ function toggleTransactionDetails(id) {
     }
 }
 
+// =============================
+// 📊 Admin Users Summary
+// =============================
+
+async function loadAdminUsersSummary() {
+    const container = document.getElementById('adminUsersSummary');
+    
+    try {
+        const users = await api.getSheet('user_credentials');
+        
+        if (!users || users.error || !Array.isArray(users) || users.length === 0) {
+            container.innerHTML = `
+                <div class="summary-card toget"><div class="label">To Get (Pending)</div><div class="value">₹0</div></div>
+                <div class="summary-card toget"><div class="label">To Get (Completed)</div><div class="value">₹0</div></div>
+                <div class="summary-card togive"><div class="label">To Give (Pending)</div><div class="value">₹0</div></div>
+                <div class="summary-card togive"><div class="label">To Give (Completed)</div><div class="value">₹0</div></div>
+            `;
+            return;
+        }
+
+        let toGetPending = 0;
+        let toGetCompleted = 0;
+        let toGivePending = 0;
+        let toGiveCompleted = 0;
+
+        // Get all transactions master to know the mode
+        const masterTransactions = await api.getSheet('transaction_master');
+        const masterMap = {};
+        if (masterTransactions && Array.isArray(masterTransactions)) {
+            masterTransactions.forEach(t => {
+                masterMap[t.transaction_id || t.id] = t;
+            });
+        }
+
+        // Process each user's transactions
+        for (const user of users) {
+            const username = user.username;
+            if (!username) continue;
+            
+            const userTxns = await api.getUserTransactions(username);
+            if (!userTxns || !Array.isArray(userTxns)) continue;
+            
+            for (const txn of userTxns) {
+                const tid = txn.transaction_id;
+                const master = masterMap[tid];
+                if (!master) continue;
+                
+                const adminMode = master.mode || 'to get';
+                const amount = parseFloat(txn.amount) || 0;
+                const status = txn.status || 'pending';
+                
+                // Admin mode 'to give' means user should see 'to get'
+                // Admin mode 'to get' means user should see 'to give'
+                const userMode = adminMode === 'to give' ? 'to get' : 'to give';
+                
+                if (userMode === 'to get') {
+                    if (status === 'pending') {
+                        toGetPending += amount;
+                    } else if (status === 'completed') {
+                        toGetCompleted += amount;
+                    }
+                } else if (userMode === 'to give') {
+                    if (status === 'pending') {
+                        toGivePending += amount;
+                    } else if (status === 'completed') {
+                        toGiveCompleted += amount;
+                    }
+                }
+            }
+        }
+
+        container.innerHTML = `
+            <div class="summary-card toget">
+                <div class="label">To Get (Pending)</div>
+                <div class="value">₹${toGetPending.toFixed(2)}</div>
+            </div>
+            <div class="summary-card toget">
+                <div class="label">To Get (Completed)</div>
+                <div class="value">₹${toGetCompleted.toFixed(2)}</div>
+            </div>
+            <div class="summary-card togive">
+                <div class="label">To Give (Pending)</div>
+                <div class="value">₹${toGivePending.toFixed(2)}</div>
+            </div>
+            <div class="summary-card togive">
+                <div class="label">To Give (Completed)</div>
+                <div class="value">₹${toGiveCompleted.toFixed(2)}</div>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error('Error loading admin users summary:', error);
+        container.innerHTML = `
+            <div class="text-center text-red-500 col-span-full">Error loading summary</div>
+        `;
+    }
+}
+
 async function loadAdminUsers() {
     const container = document.getElementById('adminUsersList');
-    const summaryContainer = document.getElementById('userSummaryContainer');
-    
     container.innerHTML = `
         <div class="text-center py-12 col-span-full">
             <i class="fas fa-spinner fa-spin text-3xl text-purple-500"></i>
             <p class="mt-3 text-gray-500">Loading users...</p>
         </div>
     `;
-    
-    // Show loading in summary
-    summaryContainer.innerHTML = `
-        <div class="text-center py-4 col-span-full">
-            <i class="fas fa-spinner fa-spin text-2xl text-purple-500"></i>
-        </div>
-    `;
 
     try {
-        // Load summary first (faster)
-        const summary = await api.getUserSummary();
-        summaryContainer.innerHTML = `
-            <div class="user-summary-card give-pending">
-                <div class="label">To Give (Pending)</div>
-                <div class="value">₹${summary.givePending.toFixed(2)}</div>
-            </div>
-            <div class="user-summary-card give-completed">
-                <div class="label">To Give (Completed)</div>
-                <div class="value">₹${summary.giveCompleted.toFixed(2)}</div>
-            </div>
-            <div class="user-summary-card get-pending">
-                <div class="label">To Get (Pending)</div>
-                <div class="value">₹${summary.getPending.toFixed(2)}</div>
-            </div>
-            <div class="user-summary-card get-completed">
-                <div class="label">To Get (Completed)</div>
-                <div class="value">₹${summary.getCompleted.toFixed(2)}</div>
-            </div>
-        `;
+        // Load summary first
+        await loadAdminUsersSummary();
 
         const users = await api.getSheet('user_credentials');
 
@@ -955,10 +962,15 @@ async function loadAdminUsers() {
                 const status = t.status || 'pending';
                 const statusClass = status === 'completed' ? 'status-completed' : 
                                    status === 'cancelled' ? 'status-cancelled' : 'status-pending';
-                const mode = t.mode || transaction?.mode || 'to get';
-                const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+                
+                // Get admin mode from master
+                const adminMode = transaction ? transaction.mode : 'to get';
+                // For user display: swap the mode
+                const userMode = adminMode === 'to give' ? 'to get' : 
+                                adminMode === 'to get' ? 'to give' : adminMode;
+                const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
                 const amount = t.amount || 0;
-                const amountClass = mode === 'to get' ? 'get' : 'give';
+                const amountClass = userMode === 'to get' ? 'get' : 'give';
 
                 return `
                     <div class="user-transaction-item">
@@ -966,7 +978,7 @@ async function loadAdminUsers() {
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-gray-800">${title}</div>
                                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span class="mode-badge ${modeClass} text-xs">${mode}</span>
+                                    <span class="mode-badge ${modeClass} text-xs">${userMode}</span>
                                     <span class="status-badge ${statusClass}">${status}</span>
                                     <span class="text-sm text-gray-500">${t.date || 'N/A'}</span>
                                 </div>
@@ -1595,6 +1607,7 @@ async function submitAddTransaction(event) {
             setTimeout(() => {
                 closeAddTransactionModal();
                 loadAdminTransactions();
+                loadAdminUsers(); // Refresh users to update summary
             }, 1500);
         } else {
             throw new Error(result?.error || 'Failed to add transaction');
@@ -1728,6 +1741,7 @@ async function submitEditTransaction(event) {
             setTimeout(() => {
                 closeEditTransactionModal();
                 loadAdminTransactions();
+                loadAdminUsers(); // Refresh users to update summary
             }, 1500);
         } else {
             throw new Error(result?.error || 'Failed to update transaction');
@@ -1995,6 +2009,7 @@ async function executeDelete() {
             if (result && result.success) {
                 showNotification('Transaction deleted successfully!', 'success');
                 await loadAdminTransactions();
+                await loadAdminUsers(); // Refresh users to update summary
             } else {
                 throw new Error(result?.error || 'Failed to delete transaction');
             }
@@ -2064,9 +2079,14 @@ async function loadUserTransactions() {
             const status = userTxn?.status || 'pending';
             const amount = userTxn?.amount || transaction.amount || '0';
             
-            const mode = userTxn?.mode || transaction.mode || 'to get';
-            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
-            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            // Admin mode from master
+            const adminMode = transaction.mode || 'to get';
+            // For user display: swap the mode
+            const userMode = adminMode === 'to give' ? 'to get' : 
+                            adminMode === 'to get' ? 'to give' : adminMode;
+            
+            const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = userMode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
             
             const statusClass = status === 'completed' ? 'status-completed' : 
                                status === 'cancelled' ? 'status-cancelled' : 'status-pending';
@@ -2098,7 +2118,7 @@ async function loadUserTransactions() {
                         </div>
                         <div class="flex items-center space-x-3 flex-shrink-0">
                             ${status !== 'pending' ? `<span class="status-badge ${statusClass}">${status}</span>` : ''}
-                            ${amount > 0 ? `<span class="transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
+                            ${amount > 0 ? `<span class="transaction-amount ${userMode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
                             <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
                         </div>
                     </div>
@@ -2112,7 +2132,7 @@ async function loadUserTransactions() {
                                 </div>
                                 <div>
                                     <div class="detail-label">Mode</div>
-                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${userMode}</span></div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Amount</div>
