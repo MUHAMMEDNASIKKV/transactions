@@ -874,7 +874,7 @@ async function loadAdminUsersSummary() {
             return;
         }
 
-        // Get all transactions master to know the admin mode
+        // Get all transactions master
         const masterTransactions = await api.getSheet('transaction_master');
         const masterMap = {};
         if (masterTransactions && Array.isArray(masterTransactions)) {
@@ -906,22 +906,18 @@ async function loadAdminUsersSummary() {
                 const master = masterMap[tid];
                 if (!master) continue;
                 
-                const adminMode = master.mode || 'to get';
+                // Use the mode directly from master (no swap)
+                const mode = master.mode || 'to get';
                 const amount = parseFloat(txn.amount) || 0;
                 const status = txn.status || 'pending';
                 
-                // CORRECTED LOGIC:
-                // Admin 'to give' -> User sees 'to get'
-                // Admin 'to get' -> User sees 'to give'
-                if (adminMode === 'to give') {
-                    // This appears as 'to get' to the user
+                if (mode === 'to get') {
                     if (status === 'pending') {
                         userToGetPending += amount;
                     } else if (status === 'completed') {
                         userToGetCompleted += amount;
                     }
-                } else if (adminMode === 'to get') {
-                    // This appears as 'to give' to the user
+                } else if (mode === 'to give') {
                     if (status === 'pending') {
                         userToGivePending += amount;
                     } else if (status === 'completed') {
@@ -1037,14 +1033,11 @@ async function loadAdminUsers() {
                 const statusClass = status === 'completed' ? 'status-completed' : 
                                    status === 'cancelled' ? 'status-cancelled' : 'status-pending';
                 
-                // Get admin mode from master
-                const adminMode = transaction ? transaction.mode : 'to get';
-                // For user display: swap the mode
-                const userMode = adminMode === 'to give' ? 'to get' : 
-                                adminMode === 'to get' ? 'to give' : adminMode;
-                const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
+                // Use mode directly from master (no swap)
+                const mode = transaction ? transaction.mode : 'to get';
+                const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
                 const amount = t.amount || 0;
-                const amountClass = userMode === 'to get' ? 'get' : 'give';
+                const amountClass = mode === 'to get' ? 'get' : 'give';
 
                 return `
                     <div class="user-transaction-item">
@@ -1052,7 +1045,7 @@ async function loadAdminUsers() {
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-gray-800">${title}</div>
                                 <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span class="mode-badge ${modeClass} text-xs">${userMode}</span>
+                                    <span class="mode-badge ${modeClass} text-xs">${mode}</span>
                                     <span class="status-badge ${statusClass}">${status}</span>
                                     <span class="text-sm text-gray-500">${t.date || 'N/A'}</span>
                                 </div>
@@ -2162,14 +2155,10 @@ async function loadUserTransactions() {
             const status = userTxn?.status || 'pending';
             const amount = userTxn?.amount || transaction.amount || '0';
             
-            // Admin mode from master
-            const adminMode = transaction.mode || 'to get';
-            // For user display: swap the mode
-            const userMode = adminMode === 'to give' ? 'to get' : 
-                            adminMode === 'to get' ? 'to give' : adminMode;
-            
-            const modeClass = userMode === 'to get' ? 'mode-get' : 'mode-give';
-            const modeIcon = userMode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
+            // Use mode directly from master (no swap)
+            const mode = transaction.mode || 'to get';
+            const modeClass = mode === 'to get' ? 'mode-get' : 'mode-give';
+            const modeIcon = mode === 'to get' ? 'fa-arrow-down' : 'fa-arrow-up';
             
             const statusClass = status === 'completed' ? 'status-completed' : 
                                status === 'cancelled' ? 'status-cancelled' : 'status-pending';
@@ -2201,7 +2190,7 @@ async function loadUserTransactions() {
                         </div>
                         <div class="flex items-center space-x-3 flex-shrink-0">
                             ${status !== 'pending' ? `<span class="status-badge ${statusClass}">${status}</span>` : ''}
-                            ${amount > 0 ? `<span class="transaction-amount ${userMode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
+                            ${amount > 0 ? `<span class="transaction-amount ${mode === 'to get' ? 'get' : 'give'}">₹${amount}</span>` : ''}
                             <i class="fas fa-chevron-down expand-arrow" id="user-arrow-${tid}"></i>
                         </div>
                     </div>
@@ -2215,7 +2204,7 @@ async function loadUserTransactions() {
                                 </div>
                                 <div>
                                     <div class="detail-label">Mode</div>
-                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${userMode}</span></div>
+                                    <div class="detail-value"><span class="mode-badge ${modeClass}">${mode}</span></div>
                                 </div>
                                 <div>
                                     <div class="detail-label">Amount</div>
