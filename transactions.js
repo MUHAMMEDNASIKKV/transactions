@@ -910,18 +910,18 @@ async function loadAdminUsersSummary() {
                 const amount = parseFloat(txn.amount) || 0;
                 const status = txn.status || 'pending';
                 
-                // Admin mode 'to give' -> User sees 'to get'
-                // Admin mode 'to get' -> User sees 'to give'
-                const userMode = adminMode === 'to give' ? 'to get' : 
-                                adminMode === 'to get' ? 'to give' : adminMode;
-                
-                if (userMode === 'to get') {
+                // CORRECTED LOGIC:
+                // Admin 'to give' -> User sees 'to get'
+                // Admin 'to get' -> User sees 'to give'
+                if (adminMode === 'to give') {
+                    // This appears as 'to get' to the user
                     if (status === 'pending') {
                         userToGetPending += amount;
                     } else if (status === 'completed') {
                         userToGetCompleted += amount;
                     }
-                } else if (userMode === 'to give') {
+                } else if (adminMode === 'to get') {
+                    // This appears as 'to give' to the user
                     if (status === 'pending') {
                         userToGivePending += amount;
                     } else if (status === 'completed') {
