@@ -929,7 +929,6 @@
             font-size: 0.875rem;
         }
 
-        /* Union Summary Cards */
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -982,7 +981,6 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
-        /* Confirmation Dialog */
         .confirm-overlay {
             position: fixed;
             top: 0;
@@ -1046,6 +1044,17 @@
                 font-size: 0.6rem;
             }
         }
+
+        /* Fast loading shimmer */
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
 <body>
@@ -1066,13 +1075,13 @@
                         <div>
                             <label for="username" class="input-label">Username</label>
                             <input type="text" id="username" name="username" required
-                            class="input-field" placeholder="Enter your username">
+                            class="input-field" placeholder="Enter your username" autocomplete="username">
                         </div>
 
                         <div>
                             <label for="password" class="input-label">Password</label>
                             <input type="password" id="password" name="password" required
-                            class="input-field" placeholder="Enter your password">
+                            class="input-field" placeholder="Enter your password" autocomplete="current-password">
                         </div>
 
                         <div id="loginError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
@@ -1229,27 +1238,25 @@
             </div>
 
             <!-- Admin Users Page -->
-<div id="adminUsersPage" class="page-content hidden">
-    <div class="glass-card rounded-2xl p-4 md:p-8">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
-            <div>
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-users text-purple-600"></i>
-                    Users
-                </h2>
-                <p class="text-gray-500 text-sm">Manage all users</p>
+            <div id="adminUsersPage" class="page-content hidden">
+                <div class="glass-card rounded-2xl p-4 md:p-8">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-users text-purple-600"></i>
+                                Users
+                            </h2>
+                            <p class="text-gray-500 text-sm">Manage all users</p>
+                        </div>
+                        <button onclick="openAddUserModal()" class="btn-success">
+                            <i class="fas fa-user-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+
+                    <div id="adminUsersSummary" class="summary-grid mb-6"></div>
+                    <div id="adminUsersList" class="users-grid"></div>
+                </div>
             </div>
-            <button onclick="openAddUserModal()" class="btn-success">
-                <i class="fas fa-user-plus mr-2"></i>Add User
-            </button>
-        </div>
-
-        <!-- Transaction Summary Cards -->
-        <div id="adminUsersSummary" class="summary-grid mb-6"></div>
-
-        <div id="adminUsersList" class="users-grid"></div>
-    </div>
-</div>
 
             <!-- Admin Union Page -->
             <div id="adminUnionPage" class="page-content hidden">
@@ -1267,10 +1274,7 @@
                         </button>
                     </div>
 
-                    <!-- Summary Cards -->
                     <div id="unionSummary" class="summary-grid"></div>
-
-                    <!-- Union Transactions List -->
                     <div id="unionTransactionsList"></div>
                 </div>
             </div>
@@ -1293,7 +1297,6 @@
                         <i class="fas fa-layer-group text-emerald-600"></i>
                         Union Transactions
                     </h2>
-                    <!-- Union Transactions List (no summary, no add/edit) -->
                     <div id="userUnionTransactionsList"></div>
                 </div>
             </div>
@@ -1859,7 +1862,7 @@
             }
         });
 
-        // ---- Login persistence: restore session on load ----
+        // ---- Fast session restore ----
         (function restoreSession() {
             const saved = sessionStorage.getItem('transaction_session');
             if (saved) {
@@ -1875,13 +1878,17 @@
                         if (currentUser.role === 'admin') {
                             document.getElementById('userNav').classList.add('hidden');
                             document.getElementById('adminNav').classList.remove('hidden');
-                            loadAdminData().then(() => showPage('adminTransactions'));
+                            // Load data in background
+                            setTimeout(() => {
+                                loadAdminData().then(() => showPage('adminTransactions'));
+                            }, 10);
                         } else {
                             document.getElementById('adminNav').classList.add('hidden');
                             document.getElementById('userNav').classList.remove('hidden');
-                            loadUserTransactions().then(() => showPage('userTransactions'));
+                            setTimeout(() => {
+                                loadUserTransactions().then(() => showPage('userTransactions'));
+                            }, 10);
                         }
-                        setTimeout(() => preloadCriticalData(), 100);
                     } else {
                         sessionStorage.removeItem('transaction_session');
                     }
@@ -1890,91 +1897,6 @@
                 }
             }
         })();
-
-        // ---- Override login to save session ----
-        const originalLogin = login;
-        login = async function() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (!username || !password) {
-                showError('Please enter both username and password');
-                return;
-            }
-
-            const loginBtn = document.querySelector('#loginForm button[type="submit"]');
-            const originalText = loginBtn.innerHTML;
-            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
-            loginBtn.disabled = true;
-
-            try {
-                const users = await api.getSheet("user_credentials", false);
-                if (!users || users.error || !Array.isArray(users)) {
-                    showError('Failed to fetch user data');
-                    return;
-                }
-                const user = users.find(u => u.username === username && u.password === password);
-
-                if (user) {
-                    currentUser = {
-                        username: user.username,
-                        name: user.full_name || user.username,
-                        role: user.role || 'user',
-                        userId: user.username
-                    };
-
-                    sessionStorage.setItem('transaction_session', JSON.stringify({
-                        user: currentUser,
-                        timestamp: Date.now()
-                    }));
-
-                    document.getElementById('loginPage').classList.add('hidden');
-                    document.getElementById('dashboardContainer').classList.remove('hidden');
-                    document.getElementById('welcomeUser').textContent = `Welcome, ${currentUser.name}`;
-                    loadUserProfile(username);
-
-                    if (currentUser.role === 'admin') {
-                        document.getElementById('userNav').classList.add('hidden');
-                        document.getElementById('adminNav').classList.remove('hidden');
-                        await loadAdminData();
-                        showPage('adminTransactions');
-                    } else {
-                        document.getElementById('adminNav').classList.add('hidden');
-                        document.getElementById('userNav').classList.remove('hidden');
-                        await loadUserTransactions();
-                        showPage('userTransactions');
-                    }
-                    setTimeout(() => preloadCriticalData(), 100);
-                    hideError();
-
-                    history.pushState(null, '', window.location.href);
-                } else {
-                    showError('Invalid username or password');
-                }
-            } catch (error) {
-                showError('Network error: ' + error.message);
-            } finally {
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-            }
-        };
-
-        // ---- Override logout to clear session ----
-        const originalLogout = logout;
-        logout = function() {
-            sessionStorage.removeItem('transaction_session');
-            originalLogout();
-            history.pushState(null, '', window.location.href);
-        };
-
-        window.addEventListener('popstate', function(e) {
-            if (currentUser && document.getElementById('loginPage') && !document.getElementById('loginPage')
-                .classList.contains('hidden')) {
-                document.getElementById('loginPage').classList.add('hidden');
-                document.getElementById('dashboardContainer').classList.remove('hidden');
-                history.pushState(null, '', window.location.href);
-            }
-        });
 
         function showSignup() {
             document.getElementById('loginSection').classList.add('hidden');
@@ -2089,18 +2011,7 @@
             }, duration);
         }
 
-        async function preloadCriticalData() {
-            if (currentUser) {
-                const criticalSheets = ['user_credentials', 'transaction_master', 'union'];
-                api.getBatchSheets(criticalSheets);
-            }
-        }
-
-        setInterval(() => {
-            if (currentUser) preloadCriticalData();
-        }, 2 * 60 * 1000);
-
-        console.log('%c📊 Transaction Manager Loaded Successfully! 📊', 'color: #4f46e5; font-size: 16px; font-weight: bold;');
+        console.log('%c🚀 Transaction Manager Loaded!', 'color: #4f46e5; font-size: 16px; font-weight: bold;');
     </script>
 </body>
 </html>
